@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.icerti.ezcerti.prof.dao.ProfMypageMapper">
+
+<resultMap type="hashmap" id="lectureDay">
+<id property="classday" column="classday"/>
+<id property="myclassday" column="myclassday"/>
+<result property="class_prev" column="class_prev"/>
+<result property="class_next" column="class_next"/>
+<result property="classday_name" column="classday_name"/>
+</resultMap>
+
+<resultMap type="com.icerti.ezcerti.domain.Attendmaster" id="getTodayLecture">
+<id property="univ_cd" column="univ_cd"/>
+<result property="row_no" column="row_no"/>
+<result property="term_cd" column="term_cd"/>
+<result property="subject_cd" column="subject_cd"/>
+<result property="subject_div_cd" column="subject_div_cd"/>
+<result property="classday_no" column="classday_no"/>
+<result property="classhour_start_time" column="classhour_start_time"/>
+<result property="classhour_end_time" column="classhour_end_time"/>
+<result property="prof_no" column="prof_no"/>
+<result property="class_cd" column="class_cd"/>
+<result property="classday" column="classday"/>
+<result property="class_name" column="class_name"/>
+<result property="classday_name" column="classday_name"/>
+<result property="classhour_name" column="classhour_name"/>
+<result property="prof_name" column="prof_name"/>
+<result property="prof_coll_name" column="prof_coll_name"/>
+<result property="prof_dept_name" column="prof_dept_name"/>
+<result property="attendee_cnt" column="attendee_cnt"/>
+<result property="attend_proc_cnt" column="attend_proc_cnt"/>
+<result property="attend_present_cnt" column="attend_present_cnt"/>
+<result property="attend_late_cnt" column="attend_late_cnt"/>
+<result property="attend_absent_cnt" column="attend_absent_cnt"/>
+<result property="attend_off_cnt" column="attend_off_cnt"/>
+<result property="attend_quit_cnt" column="attend_quit_cnt"/>
+<result property="attend_auth_cnt" column="attend_auth_cnt"/>
+<result property="classroom_no" column="classroom_no"/>
+<result property="class_cert_no" column="class_cert_no"/>
+<result property="class_cert_time" column="class_cert_time"/>
+<result property="class_cert_issue_time" column="class_cert_issue_time"/>
+<result property="class_prog_cd" column="class_prog_name"/>
+<result property="class_type_cd" column="class_type_name"/>
+<result property="class_sts_cd" column="class_sts_name"/>
+<result property="cert_sts_cd" column="cert_sts_name"/>
+<result property="attend_auth_cd" column="attend_auth_cd"/>
+<result property="cert_type" column="cert_type"/>
+<result property="before_class_cd" column="before_class_cd"/>
+<result property="reg_type_cd" column="reg_type_cd"/>
+<result property="reg_etc" column="reg_etc"/>
+<result property="reg_date" column="reg_date"/>
+</resultMap>
+
+<resultMap type="com.icerti.ezcerti.domain.Lecture" id="getLecture">
+<id property="row_no" column="row_no"/>
+<result property="univ_cd" column="univ_cd"/>
+<result property="term_cd" column="term_cd"/>
+<result property="subject_cd" column="subject_cd"/>
+<result property="subject_div_cd" column="subject_div_cd"/>
+<result property="classday_no" column="classday_no"/>
+<result property="classhour_start_time" column="classhour_start_time"/>
+<result property="classhour_end_time" column="classhour_end_time"/>
+<result property="prof_no" column="prof_no"/>
+<result property="class_cd" column="class_cd"/>
+<result property="class_name" column="class_name"/>
+<result property="classday_name" column="classday_name"/>
+<result property="classhour_name" column="classhour_name"/>
+<result property="prof_name" column="prof_name"/>
+<result property="prof_coll_name" column="prof_coll_name"/>
+<result property="prof_dept_name" column="prof_dept_name"/>
+<result property="attendee_cnt" column="attendee_cnt"/>
+<result property="classroom_no" column="classroom_no"/>
+<result property="class_prog_cd" column="class_prog_cd"/>
+<result property="reg_type_cd" column="reg_type_cd"/>
+<result property="reg_etc" column="reg_etc"/>
+<result property="reg_date" column="reg_date"/>
+</resultMap>
+
+<!-- 2014.12.30
+	- CHUL_TB_ATTENDMASTER를 V_CHUL_VW_ATTENDMASTER로 변경
+-->
+<select id="getTodayLectureList" parameterType="map" resultType="com.icerti.ezcerti.domain.Attendmaster">
+SELECT 
+	<choose>
+		<when test="globalMakLesson != null and globalMakLesson.equalsIgnoreCase('Y') and globalMakLessonLimit != null and globalMakLessonLimit.equalsIgnoreCase('0')">
+			'Y' AS CLASSOFF_YN,
+		</when>
+		<when test="globalMakLesson != null and globalMakLesson.equalsIgnoreCase('Y') and globalMakLessonLimit != null and !globalMakLessonLimit.equalsIgnoreCase('0')">
+			<![CDATA[
+			CASE WHEN (TO_DATE(TO_CHAR(SYSDATE, 'YYYYMMDD'), 'YYYYMMDD') - TO_DATE(TO_CHAR(A.CLASSDAY, 'YYYYMMDD'), 'YYYYMMDD')) >= #{globalMakLessonLimit} THEN 'Y'
+				ELSE 'N' 
+			END AS CLASSOFF_YN,
+			]]>
+		</when>
+		<otherwise>
+			'N' AS CLASSOFF_YN,
+		</otherwise>
+	</choose>
+	B.CODE_NAME AS CLASS_PROG_NAME, 
+	C.CODE_NAME AS CLASS_TYPE_NAME, 
+	D.CODE_NAME AS CLASS_STS_NAME, 
+	E.CODE_NAME AS CERT_STS_NAME, 
+	(SELECT (TO_CHAR(DECODE(A.CLASS_TYPE_CD, 'G019C003', BEFORE_CLASSDAY, CLASSDAY),'IW') - TO_CHAR(TERM_START_DATE,'IW') + 1) FROM CHUL_TB_UNIV WHERE UNIV_STS_CD = 'G004C001') CURR_WEEK,
+	A.*
+FROM 
+	V_CHUL_VW_ATTENDMASTER A, 
+	CHUL_TB_CODEMASTER B, 
+	CHUL_TB_CODEMASTER C, 
+	CHUL_TB_CODEMASTER D, 
+	CHUL_TB_CODEMASTER E
+WHERE UNIV_CD=#{univ_cd}
+	AND year=#{year}
+	AND TERM_CD=#{term_cd}
+	AND PROF_NO=#{prof_no}
+<choose>
+<when test='classday.equals("")'>
+AND TRUNC(CLASSDAY)=TRUNC(SYSDATE)
+</when>
+<otherwise>
+AND to_char(classday, 'YYYY-MM-DD')=#{classday}
+</otherwise>
+</choose>
+AND A.CLASS_PROG_CD=B.CODE
+AND A.CLASS_TYPE_CD=C.CODE
+AND A.CLASS_STS_CD=D.CODE
+AND A.CERT_STS_CD=E.CODE
+ORDER BY CLASSHOUR_START_TIME ASC
+</select>
+
+<!-- 2014.12.30
+	- CHUL_TB_ATTENDMASTER를 V_CHUL_VW_ATTENDMASTER로 변경
+-->
+<select id="getLectureDay" parameterType="map" resultMap="lectureDay">
+SELECT 
+	TO_CHAR((SELECT *
+	FROM
+		(SELECT classday AS classday_next
+		FROM 
+			<!-- CHUL_TB_attendmaster --> 
+			V_CHUL_VW_attendmaster 
+		WHERE univ_cd = #{univ_cd}
+		AND term_cd = #{term_cd} 
+		AND prof_no = #{prof_no}
+		<choose>
+		<when test='classday.equals("")'>
+		AND trunc(classday) > trunc(SYSDATE)
+		</when>
+		<otherwise>
+		AND trunc(classday) > trunc(to_date(#{classday}, 'YYYY-MM-DD'))
+		</otherwise>
+		</choose>
+		ORDER BY classday_next ASC)
+	WHERE ROWNUM=1), 'YYYY-MM-DD') AS class_next,
+	TO_CHAR((SELECT *
+			FROM
+				(SELECT classday AS classday_prev 
+				FROM 
+					<!-- CHUL_TB_attendmaster --> 
+					V_CHUL_VW_attendmaster 
+				WHERE univ_cd = #{univ_cd}
+				AND term_cd = #{term_cd} 
+				AND prof_no = #{prof_no}
+				<choose>
+				<when test='classday.equals("")'>
+				<![CDATA[
+				AND trunc(classday) < trunc(SYSDATE)
+				]]>
+				</when>
+				<otherwise>
+				<![CDATA[
+				AND trunc(classday) < trunc(to_date(#{classday}, 'YYYY-MM-DD'))
+				]]>
+				</otherwise>
+				</choose>
+				ORDER BY classday_prev DESC)
+			WHERE ROWNUM=1), 'YYYY-MM-DD') AS class_prev
+	,decode(day, 1, '일', 2, '월', 3, '화', 4, '수', 5, '목', 6, '금', 7, '토', day) classday_name,
+	<choose>
+	<when test='classday.equals("")'>
+	TO_CHAR(SYSDATE, 'YYYY-MM-DD') AS CLASSDAY,
+	TO_CHAR(SYSDATE, 'YYYY-MM-DD') AS MYCLASSDAY
+	</when>
+	<otherwise>
+	#{classday} AS CLASSDAY,
+	DECODE(#{classday}, TO_CHAR(SYSDATE, 'YYYY-MM-DD'), #{classday}, #{classday}) AS MYCLASSDAY
+	</otherwise>
+	</choose>
+	from
+		<choose>
+		<when test='classday.equals("")'>
+		(select to_char(to_date(sysdate), 'D') day
+		</when>
+		<otherwise>
+		(select to_char(to_date(#{classday}, 'YYYY-MM-DD'), 'D') day
+		</otherwise>
+		</choose>
+		from dual)
+</select>
+
+<!-- 2014.12.30
+	- CHUL_TB_class를 V_CHUL_VW_class로 변경
+	- attend_cnt를 V_CHUL_VW_attendee에서 count 하도록 변경
+	- 년도 조건 추가
+-->
+<select id="getLectureList" parameterType="map" resultType="com.icerti.ezcerti.domain.Lecture">
+<!-- 
+SELECT ROWNUM row_no, A.*
+FROM
+	(SELECT *
+	FROM 
+		CHUL_TB_class
+	WHERE univ_cd=#{univ_cd}
+	AND term_cd=#{term_cd} 
+	AND prof_no=#{prof_no}
+	ORDER BY classday_no ASC, classhour_start_time ASC) A
+ORDER BY ROWNUM ASC
+-->
+SELECT ROWNUM ROW_NO, A.*
+FROM
+(
+SELECT 
+    CLS.UNIV_CD, CLS.YEAR, CLS.TERM_CD, 
+    CLS.SUBJECT_CD, CLS.SUBJECT_DIV_CD, 
+    CLS.PROF_NO, CLS.CLASS_CD, CLS.CLASSHOUR_START_TIME, HOUR.CLASSHOUR_END_TIME, 
+    CLS.CLASSDAY_NO, CLS.CLASS_NAME, CLS.CLASSDAY_NAME, 
+    CLS.CLASSHOUR_NAME, 
+    CLS.PROF_NAME, CLS.PROF_COLL_NAME, CLS.PROF_DEPT_NAME, 
+    CLS.CLASSROOM_NO, CLS.CLASS_PROG_CD, CLS.CLASS_ADM_CD,
+    CLS.REG_ETC, CLS.REG_DATE, CLS.IS_TEAM,
+    (SELECT COUNT(*) FROM V_CHUL_VW_ATTENDEE AD
+        WHERE 1=1     
+            AND UNIV_CD = CLS.UNIV_CD
+            AND YEAR = CLS.YEAR
+            AND TERM_CD = CLS.TERM_CD
+            AND SUBJECT_CD = CLS.SUBJECT_CD
+            AND SUBJECT_DIV_CD = CLS.SUBJECT_DIV_CD) AS ATTENDEE_CNT
+FROM V_CHUL_VW_CLASS CLS, V_CHUL_VW_CLASSHOUR HOUR
+WHERE CLS.UNIV_CD=#{univ_cd}
+    AND CLS.YEAR=#{year} 
+    AND CLS.TERM_CD=#{term_cd} 
+    AND CLS.PROF_NO=#{prof_no}
+    AND CLS.YEAR = HOUR.YEAR AND CLS.TERM_CD = HOUR.TERM_CD
+    AND CLS.CLASSHOUR_START_TIME = HOUR.CLASSHOUR_START_TIME
+ORDER BY CLS.CLASS_NAME, CLS.SUBJECT_CD, CLS.SUBJECT_DIV_CD, CLS.CLASSDAY_NO, CLS.CLASSHOUR_START_TIME
+) A
+<!-- ORDER BY ROWNUM ASC -->
+</select>
+	
+</mapper>

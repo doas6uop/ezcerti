@@ -1,0 +1,928 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.icerti.ezcerti.admin.dao.AdminInfoMapper">
+
+<resultMap type="com.icerti.ezcerti.domain.Admin" id="getAdmin">
+	<id property="univ_cd" column="univ_cd"/>
+	<result property="coll_cd" column="coll_cd"/>
+	<result property="dept_cd" column="dept_cd"/>
+	<result property="admin_no" column="admin_no"/>
+	<result property="coll_name" column="coll_name"/>
+	<result property="dept_name" column="dept_name"/>
+	<result property="admin_name" column="admin_name"/>
+	<result property="admin_passwd" column="admin_passwd"/>
+	<result property="hp_no" column="hp_no"/>
+	<result property="email_addr" column="email_addr"/>
+	<result property="photo_info" column="photo_info"/>
+	<result property="admin_level_cd" column="admin_level_cd"/>
+	<result property="admin_level_name" column="admin_level_name"/>
+	<result property="admin_sts_cd" column="admin_sts_cd"/>
+	<result property="admin_sts_name" column="admin_sts_name"/>
+	<result property="admin_nick_name" column="admin_nick_name"/>
+	<result property="authority" column="authority"/>
+	<result property="reg_type_cd" column="reg_type_cd"/>
+	<result property="reg_etc" column="reg_etc"/>
+	<result property="reg_date" column="reg_date"/>
+	<result property="row_no" column="row_no"/>
+</resultMap>
+
+	<select id="getAdminChk" parameterType="map" resultType="int">
+		SELECT COUNT(*) 
+		FROM 
+			V_CHUL_VW_admin
+		WHERE univ_cd=#{univ_cd}
+		AND admin_no=#{admin_no}
+	</select>
+
+	<select id="getAdminList" parameterType="map" resultMap="getAdmin">
+	<![CDATA[
+		SELECT c.code_name AS admin_level_name, d.code_name AS admin_sts_name , a.* 
+		FROM
+			(SELECT *
+        	 FROM
+        		(SELECT ROWNUM row_no, a.* 
+        		 FROM 
+        		 	V_CHUL_VW_admin a
+        		 WHERE univ_cd=#{univ_cd}
+  	]]>
+        <if test='!searchValue.equals("")'>
+        	<choose>
+        		<when test='item.equals("name")'>
+                 AND admin_name LIKE '%' || #{searchValue} || '%'
+        		</when>
+        		<when test='item.equals("code")'>
+                 AND admin_no LIKE '%' || #{searchValue} || '%'
+                </when>
+        	</choose>
+        </if>
+        <![CDATA[
+        		 AND ROWNUM <= #{endRow})
+        	 WHERE row_no>=#{startRow}) a, CHUL_TB_codemaster c, CHUL_TB_codemaster d
+        WHERE a.admin_level_cd=c.code AND a.admin_sts_cd=d.code
+    ]]>    
+	</select>
+
+	<select id="getAdminListCount" parameterType="map" resultType="int">
+		<![CDATA[	
+		SELECT COUNT(*)
+		FROM 
+			V_CHUL_VW_ADMIN
+		WHERE univ_cd=#{univ_cd}
+  		]]>
+    <if test='!searchValue.equals("")'>
+      <choose>
+       <when test='item.equals("name")'>
+        AND admin_name LIKE '%' || #{searchValue} || '%'
+       </when>
+       <when test='item.equals("code")'>
+        AND admin_no LIKE '%' || #{searchValue} || '%'
+       </when>
+      </choose>
+    </if>
+	</select>
+
+	<select id="getAdminView" parameterType="map" resultMap="getAdmin">
+		SELECT b.code_name AS admin_level_name, c.code_name AS admin_sts_name, a.*  
+        FROM
+            (SELECT * 
+            FROM 
+            	V_CHUL_VW_admin
+            WHERE univ_cd=#{univ_cd}
+            AND admin_no=#{admin_no}) a, CHUL_TB_codemaster b, CHUL_TB_codemaster c
+        WHERE a.admin_level_cd=b.code 
+        AND a.admin_sts_cd=c.code
+	</select>
+	
+	<select id="getCollList" resultType="com.icerti.ezcerti.domain.Coll">
+		SELECT coll_cd, coll_name 
+		FROM 
+			V_CHUL_VW_coll
+		WHERE univ_cd=#{univ_cd} 
+			AND year=#{year}
+			AND term_cd=#{term_cd}
+		ORDER BY coll_name ASC
+	</select>
+
+	<select id="getDeptList" resultType="com.icerti.ezcerti.domain.Dept">
+		SELECT dept_cd, dept_name 
+		FROM 
+			V_CHUL_VW_dept
+		WHERE univ_cd=#{univ_cd} 
+			AND year=#{year}
+			AND term_cd=#{term_cd}
+			AND coll_cd=#{coll_cd}
+	</select>
+
+	<select id="getCollName" resultType="String">
+		SELECT coll_name
+		FROM 
+			V_CHUL_VW_coll		
+		WHERE univ_cd=#{univ_cd}
+			AND year=#{year}
+			AND term_cd=#{term_cd}
+			AND coll_cd=#{coll_cd}
+	</select>
+
+	<select id="getDeptName" resultType="String">
+		SELECT dept_name
+		FROM 
+			V_CHUL_VW_dept
+		WHERE univ_cd=#{univ_cd}
+			AND year=#{year}
+			AND term_cd=#{term_cd}
+			AND dept_cd=#{dept_cd}
+	</select>
+	
+	<update id="updateAdminInfo">
+		UPDATE 
+			CHUL_TB_admin
+		SET hp_no=#{hp_no}, 
+			email_addr=#{email_addr} 
+		<if test='!admin_passwd.equals("")'>
+			,admin_passwd=#{admin_passwd}
+			,passwd_mod_date=SYSDATE
+		</if>
+		WHERE univ_cd=#{univ_cd}
+		AND admin_no=#{admin_no}		
+	</update>
+
+	<delete id="deleteAdminInfo">
+		DELETE FROM 
+			CHUL_TB_admin
+		WHERE univ_cd=#{univ_cd}
+		AND admin_no=#{admin_no}
+	</delete>
+
+	<delete id="deleteAdminInfoToInternal">
+		DELETE FROM 
+			CHUL_TB_DJU_ADMIN
+		WHERE univ_cd=#{univ_cd}
+			AND admin_no=#{admin_no}
+	</delete>
+
+	<insert id="insertAdminInfo">
+	INSERT INTO CHUL_TB_admin (
+	    univ_cd, coll_cd, dept_cd, admin_no, coll_name, 
+	    dept_name, admin_name, admin_passwd, hp_no, email_addr, 
+	    photo_info, admin_level, admin_level_cd, admin_status, admin_sts_cd, 
+	    admin_nick_name, log_end_date, authority, reg_type_cd, reg_etc, 
+	    reg_date
+	    )
+	VALUES (
+	    #{univ_cd}, #{coll_cd}, #{dept_cd}, #{admin_no}, #{coll_name},
+	    #{dept_name}, #{admin_name}, #{admin_passwd}, #{hp_no}, #{email_addr},
+	    null, '2', 'G014C003', '0', 'G015C001',
+	    null, null, 'ROLE_USER', 'G017C001', NULL,
+	    SYSDATE
+	    )
+	</insert>
+	
+	<insert id="insertAdminInfoToInternal">
+	INSERT INTO CHUL_TB_DJU_ADMIN (
+		UNIV_CD, ADMIN_NO, COLL_CD, DEPT_CD, COLL_NAME, DEPT_NAME, 
+		ADMIN_NAME, ADMIN_PASSWD, 
+		HP_NO, EMAIL_ADDR, ADMIN_STS_CD, ADMIN_LEVEL_CD, 
+		ADMIN_LEVEL, ADMIN_STATUS, REG_TYPE_CD,
+		AUTHORITY, REG_DATE
+	)
+	VALUES (
+		#{univ_cd}, #{admin_no}, #{coll_cd}, #{dept_cd}, #{coll_name}, #{dept_name},
+		#{admin_name}, #{admin_passwd}, 
+		#{hp_no}, #{email_addr}, 'G015C001', 'G014C001',
+		'0', '0', 'G017C001',
+		'ROLE_ADMIN', sysdate
+	)
+	</insert>	
+
+	<select id="getClassroomReservedListCount" parameterType="map" resultType="int">
+		SELECT 
+			COUNT(*)
+		FROM 
+			V_CHUL_VW_CLASSROOM_USEHOUR
+		WHERE univ_cd = #{univ_cd}
+			AND year = #{year}
+			AND term_cd = #{term_cd}
+			<if test='!classroom_no.equals("")'>
+				AND classroom_no = #{classroom_no}
+			</if>			
+			<if test='!classday_start.equals("")'>
+				<![CDATA[
+				AND to_char(reserve_date, 'yyyy-mm-dd') >= #{classday_start}
+				]]>
+			</if>			
+			<if test='!classday_end.equals("")'>
+				<![CDATA[
+				AND to_char(reserve_date, 'yyyy-mm-dd') <= #{classday_end}
+				]]>
+			</if>			
+	</select>
+	
+	<select id="getClassroomReservedList" parameterType="map" resultType="com.icerti.ezcerti.domain.Classroom">
+		SELECT * 
+		FROM
+			(
+				SELECT 
+					ROWNUM as row_no, A.*
+				FROM
+				(
+					SELECT
+						univ_cd, year, term_cd, classroom_no, 
+						reserve_date, start_time, end_time, classroom_name,
+						prof_no, prof_name		 
+					FROM
+						(
+							SELECT
+								A.*, B.PROF_NAME 
+							FROM V_CHUL_VW_CLASSROOM_USEHOUR A
+							LEFT OUTER JOIN V_CHUL_VW_PROF B
+							ON A.PROF_NO = B.PROF_NO
+							WHERE A.univ_cd = #{univ_cd}
+								AND A.year = #{year}
+								AND A.term_cd = #{term_cd}
+								<if test='!classroom_no.equals("")'>
+									AND A.classroom_no = #{classroom_no}
+								</if>			
+								<if test='!classday_start.equals("")'>
+									<![CDATA[
+									AND to_char(A.reserve_date, 'yyyy-mm-dd') >= #{classday_start}
+									]]>
+								</if>			
+								<if test='!classday_end.equals("")'>
+									<![CDATA[
+									AND to_char(A.reserve_date, 'yyyy-mm-dd') <= #{classday_end}
+									]]>
+								</if>	
+					) A		
+					WHERE 1=1	
+					<choose>
+						<when test='sortField != null and !sortField.equals("")'>
+							ORDER BY ${sortField} ${sortOrder}
+						</when>
+						<otherwise>
+							ORDER BY reserve_date, classroom_no, start_time, end_time
+						</otherwise>
+					</choose>		
+				) A			
+				<![CDATA[			
+				WHERE rownum <= #{endRow}
+			) 
+		WHERE row_no >= #{startRow}
+	]]>
+	</select>
+		
+	<insert id="insertClassroomReserveInfo" parameterType="map" >
+	INSERT INTO CHUL_TB_CLASSROOM_RESERVE(UNIV_CD, YEAR, TERM_CD, CLASSROOM_NO, RESERVE_DATE, START_TIME, END_TIME, REASON)
+		VALUES(#{univ_cd}, #{year}, #{term_cd}, #{classroom_no}, TO_DATE(#{reserve_date}, 'YYYY-MM-DD'), #{start_time}, #{end_time}, #{reason})
+	</insert>
+	
+	<delete id="deleteClassroomReserveInfo" parameterType="map">
+	DELETE FROM CHUL_TB_CLASSROOM_RESERVE
+	WHERE UNIV_CD = #{univ_cd}
+		AND YEAR = #{year}
+		AND TERM_CD = #{term_cd}
+		AND CLASSROOM_NO = #{classroom_no}
+		AND TO_CHAR(RESERVE_DATE, 'YYYY-MM-DD') = #{reserve_date}
+		AND START_TIME = #{start_time}
+		AND END_TIME = #{end_time}
+	</delete>
+	
+	<resultMap type="com.icerti.ezcerti.domain.Gonggyul" id="Gonggyul">
+		<id property="gonggyul_no" column="gonggyul_no"/>
+		<result property="univ_cd" column="univ_cd"/>
+		<result property="year" column="year"/>
+		<result property="term_cd" column="term_cd"/>
+		<result property="student_no" column="student_no"/>
+		<result property="student_name" column="student_name"/>
+		<result property="gong_ilja_start" column="gong_ilja_start"/>
+		<result property="gong_ilja_end" column="gong_ilja_end"/>
+		<result property="gong_sayu" column="gong_sayu"/>
+		<result property="regdate" column="regdate"/>
+		<result property="submit_date" column="submit_date"/>
+		<result property="visible_flag" column="visible_flag"/>
+		<collection property="gonggyulSubjectList" column="{gonggyul_no=gonggyul_no, gong_ilja_start=gong_ilja_start, gong_ilja_end=gong_ilja_end, student_no=student_no}" javaType="java.util.ArrayList" ofType="com.icerti.ezcerti.domain.GonggyulSubject" select="getGonggyulSubjectList"/>
+	</resultMap>
+	
+	<select id="getGonggyulListCount" parameterType="map" resultType="int">
+		SELECT 
+			COUNT(*)
+		FROM CHUL_TB_GONGGYUL GG
+	    INNER JOIN (
+					 SELECT GONGGYUL_NO
+					 FROM CHUL_TB_GONGGYUL_SUBJECT
+					 WHERE 1=1
+					 <if test='!search_type.equals("")'>
+						 <if test='search_type.equals("class_name")'>
+			             	AND CLASS_NAME LIKE #{search_value} || '%'
+			             </if>
+		             </if>
+					 GROUP BY GONGGYUL_NO
+	    			) GGS
+	       ON GG.GONGGYUL_NO = GGS.GONGGYUL_NO
+		WHERE GG.univ_cd    = #{univ_cd}
+			<if test='gong_ilja_start.equals("")'>
+	      	  AND GG.YEAR         = #{year}
+	      	</if>
+			  	AND GG.VISIBLE_FLAG = 'Y'
+			<if test='!term_cd.equals("all")'>  
+				AND GG.TERM_CD = #{term_cd}
+			</if>
+			
+			<if test='!search_type.equals("")'>
+				<choose>
+	        		<when test='search_type.equals("student_no")'>
+	                	AND GG.STUDENT_NO =  #{search_value}
+	        		</when>
+	        		<when test='search_type.equals("student_name")'>
+	                	AND GG.STUDENT_NAME LIKE #{search_value} || '%'
+	                </when>
+	        	</choose>
+			</if>
+			
+			<if test='!gong_ilja_start.equals("")'>
+				<![CDATA[
+					AND (TO_CHAR(GG.GONG_ILJA_START, 'YYYY-MM-DD') BETWEEN #{gong_ilja_start } and #{gong_ilja_end }
+					OR TO_CHAR(GG.GONG_ILJA_END, 'YYYY-MM-DD') BETWEEN #{gong_ilja_start } and #{gong_ilja_end }
+					OR #{gong_ilja_start } BETWEEN TO_CHAR(GG.GONG_ILJA_START, 'YYYY-MM-DD') AND TO_CHAR(GG.GONG_ILJA_END, 'YYYY-MM-DD')
+		  			OR #{gong_ilja_end } BETWEEN TO_CHAR(GG.GONG_ILJA_START, 'YYYY-MM-DD') AND TO_CHAR(GG.GONG_ILJA_END, 'YYYY-MM-DD'))
+				]]>
+			</if>			
+	</select>
+	
+	<select id="getGonggyulList" parameterType="map" resultMap="Gonggyul">
+		SELECT * FROM
+			(
+				SELECT 
+					ROWNUM as row_no,A.*
+				FROM 
+				(
+				
+					SELECT *
+					FROM 
+					(
+						SELECT
+							
+							gonggyul_no,
+							univ_cd,
+					        year,
+					        term_cd,
+					        student_no,
+					        student_name,
+					        to_char(gong_ilja_start, 'yy/mm/dd') as gong_ilja_start,
+					        to_char(gong_ilja_end, 'yy/mm/dd') as gong_ilja_end,
+					        gong_sayu,
+							'Y' as checkbox_flag,
+					        to_char(submit_date, 'yy/mm/dd') as submit_date, regdate
+						FROM
+							(
+								SELECT 
+									GG.*
+							    FROM CHUL_TB_GONGGYUL GG
+							    INNER JOIN (
+											 SELECT GONGGYUL_NO
+											 FROM CHUL_TB_GONGGYUL_SUBJECT
+											 WHERE 1=1
+											 <if test='!search_type.equals("")'>
+												 <if test='search_type.equals("class_name")'>
+									             	AND CLASS_NAME LIKE #{search_value} || '%'
+									             </if>
+								             </if>
+											 GROUP BY GONGGYUL_NO
+							    			) GGS
+							       ON GG.GONGGYUL_NO = GGS.GONGGYUL_NO
+							    WHERE GG.univ_cd    = #{univ_cd}
+							    <if test='gong_ilja_start.equals("")'>
+							      AND GG.YEAR         = #{year}
+							    </if>
+							      AND GG.VISIBLE_FLAG = 'Y'
+								<if test='!term_cd.equals("all")'>  
+									AND GG.TERM_CD = #{term_cd}
+								</if>
+								
+								<if test='!search_type.equals("")'>
+									<choose>
+							      		<when test='search_type.equals("student_no")'>
+							              	AND GG.STUDENT_NO =  #{search_value}
+							      		</when>
+							      		<when test='search_type.equals("student_name")'>
+											AND GG.STUDENT_NAME LIKE #{search_value} || '%'
+										</when>
+							      	</choose>
+								</if>		
+								   
+								<if test='!gong_ilja_start.equals("")'>
+									<![CDATA[
+									AND (TO_CHAR(GG.GONG_ILJA_START, 'YYYY-MM-DD') BETWEEN #{gong_ilja_start } and #{gong_ilja_end }
+									OR TO_CHAR(GG.GONG_ILJA_END, 'YYYY-MM-DD') BETWEEN #{gong_ilja_start } and #{gong_ilja_end }
+									OR #{gong_ilja_start } BETWEEN TO_CHAR(GG.GONG_ILJA_START, 'YYYY-MM-DD') AND TO_CHAR(GG.GONG_ILJA_END, 'YYYY-MM-DD')
+									OR #{gong_ilja_end } BETWEEN TO_CHAR(GG.GONG_ILJA_START, 'YYYY-MM-DD') AND TO_CHAR(GG.GONG_ILJA_END, 'YYYY-MM-DD'))
+									]]>
+								</if>
+							    
+							    ORDER BY GG.REGDATE DESC, GG.STUDENT_NO, GG.GONG_ILJA_START, GG.GONG_ILJA_END DESC
+							)
+						) A			
+						WHERE 1=1		
+						<choose>
+							<when test='sortField != null and !sortField.equals("")'>
+								ORDER BY ${sortField} ${sortOrder}
+							</when>
+							<otherwise>
+								ORDER BY REGDATE DESC
+							</otherwise>
+						</choose>
+				) A
+				<![CDATA[			
+				WHERE rownum <= #{endRow}
+			) 
+		WHERE row_no >= #{startRow}
+	]]>
+	</select>
+	
+	<select id="getGonggyulSubjectList" resultType="com.icerti.ezcerti.domain.GonggyulSubject">
+		SELECT
+		    A.GONGGYUL_NO, A.SUBJECT_CD, A.SUBJECT_DIV_CD, A.CLASS_NAME,
+		    A.CLASS_CD, A.CLASSDAY_NAME, A.CLASSHOUR_START_TIME, A.CLASS_TOTAL_CNT,
+		   (
+		    SELECT COUNT(*)
+		    FROM CHUL_TB_ATTENDDETHIST CH
+		    WHERE 1=1
+		      AND CH.CLASS_CD = A.CLASS_CD
+		      AND CH.CLASSHOUR_START_TIME = A.CLASSHOUR_START_TIME
+		      AND CH.ATTEND_AUTH_REASON_CD = 'G024C006'
+		      AND CH.CLASS_TYPE_CD != 'G019C002'
+		      AND CH.STUDENT_NO = #{student_no}
+		      AND TRUNC(CH.CLASSDAY) BETWEEN #{gong_ilja_start} AND #{gong_ilja_end}
+		  ) AS CLASS_REAL_CNT
+		FROM (
+		  SELECT 
+		    GGS.GONGGYUL_NO, GGS.SUBJECT_CD, GGS.SUBJECT_DIV_CD, GGS.CLASS_NAME,
+		    GGS.CLASS_CD, GGS.CLASSDAY_NAME, GGS.CLASSHOUR_START_TIME, COUNT(AD.CLASSDAY) AS CLASS_TOTAL_CNT
+		  FROM CHUL_TB_ATTENDMASTER_ADDINFO AD
+		  INNER JOIN (
+		               SELECT
+		               	GONGGYUL_NO, SUBJECT_CD, SUBJECT_DIV_CD, CLASS_NAME, CLASS_CD,
+      					CLASSDAY_NAME, CLASSHOUR_START_TIME
+		               FROM CHUL_TB_GONGGYUL_SUBJECT 
+		               WHERE GONGGYUL_NO = #{gonggyul_no}
+		               GROUP BY GONGGYUL_NO, SUBJECT_CD, SUBJECT_DIV_CD, CLASS_NAME, CLASS_CD,
+      							CLASSDAY_NAME, CLASSHOUR_START_TIME
+		              ) GGS
+		  ON AD.CLASS_CD = GGS.CLASS_CD
+		  	AND AD.CLASSHOUR_START_TIME = GGS.CLASSHOUR_START_TIME
+		  WHERE AD.CLASS_TYPE_CD != 'G019C002'  
+		  AND TRUNC(AD.CLASSDAY) BETWEEN #{gong_ilja_start} AND #{gong_ilja_end}
+		  GROUP BY GGS.GONGGYUL_NO, GGS.SUBJECT_CD, GGS.SUBJECT_DIV_CD, GGS.CLASS_NAME, 
+		  		   GGS.CLASS_CD, GGS.CLASSDAY_NAME, GGS.CLASSHOUR_START_TIME
+		) A
+		ORDER BY CLASS_NAME ASC, CLASSHOUR_START_TIME ASC
+	</select>
+	
+	<select id="duplicationGonggyul" parameterType="com.icerti.ezcerti.domain.Gonggyul" resultType="int">
+		SELECT COUNT(*)
+		FROM CHUL_TB_GONGGYUL
+	    WHERE UNIV_CD = #{univ_cd}
+	      AND YEAR = #{year}
+	      AND VISIBLE_FLAG = 'Y'
+	      AND TERM_CD = #{term_cd}
+	      AND STUDENT_NO = #{student_no}
+	      
+	      <if test="gonggyul_no != '' and gonggyul_no != null">
+	      	AND GONGGYUL_NO != #{gonggyul_no}
+	      </if>
+	      
+	      AND (TO_CHAR(GONG_ILJA_START, 'YYYY-MM-DD') BETWEEN #{gong_ilja_start } AND #{gong_ilja_end }
+		  OR TO_CHAR(GONG_ILJA_END, 'YYYY-MM-DD')  BETWEEN #{gong_ilja_start } AND #{gong_ilja_end }
+		  OR #{gong_ilja_start } BETWEEN TO_CHAR(GONG_ILJA_START, 'YYYY-MM-DD') AND TO_CHAR(GONG_ILJA_END, 'YYYY-MM-DD')
+		  OR #{gong_ilja_end } BETWEEN TO_CHAR(GONG_ILJA_START, 'YYYY-MM-DD') AND TO_CHAR(GONG_ILJA_END, 'YYYY-MM-DD'))
+	</select>
+	
+	<select id="getGonggyulClassnameList" parameterType="map" resultType="com.icerti.ezcerti.domain.GonggyulSubject">
+		SELECT 
+	        CLS.SUBJECT_CD, CLS.SUBJECT_DIV_CD, CLS.CLASS_NAME, 
+	        CLS.CLASS_CD, CLS.CLASSDAY_NAME, CLS.CLASSHOUR_START_TIME
+	        , CASE WHEN GGS.GONGGYUL_NO IS NULL THEN 'N'
+	          ELSE 'Y'
+	          END  AS CHK_VISIBLE
+	    FROM 
+	    (
+	      SELECT 
+	        CLS.SUBJECT_CD, CLS.SUBJECT_DIV_CD, CLS.CLASS_NAME, 
+	        CLS.CLASS_CD, CLS.CLASSDAY_NAME, CLS.CLASSHOUR_START_TIME
+	      FROM CHUL_TB_ATTENDMASTER_ADDINFO CLS
+	          INNER JOIN V_CHUL_VW_ATTENDEE ATD ON ATD.UNIV_CD = CLS.UNIV_CD
+	            AND ATD.YEAR = CLS.YEAR
+	            AND ATD.TERM_CD = CLS.TERM_CD
+	            AND ATD.SUBJECT_CD = CLS.SUBJECT_CD
+	            AND ATD.SUBJECT_DIV_CD = CLS.SUBJECT_DIV_CD
+	      WHERE ATD.UNIV_CD = #{univ_cd}
+	        AND ATD.YEAR = #{year}
+	        AND ATD.TERM_CD = #{term_cd}
+	        AND ATD.STUDENT_NO = #{student_no}
+	        AND CLS.CLASS_TYPE_CD != 'G019C002'
+	        AND TRUNC(CLS.CLASSDAY) BETWEEN #{gong_ilja_start } AND #{gong_ilja_end }
+	        GROUP BY CLS.SUBJECT_CD, CLS.SUBJECT_DIV_CD, CLS.CLASS_NAME, CLS.CLASS_CD, CLS.CLASSDAY_NAME, CLS.CLASSHOUR_START_TIME
+	      ) CLS
+	    LEFT OUTER JOIN (
+	    					SELECT
+	    						GONGGYUL_NO, SUBJECT_CD, SUBJECT_DIV_CD, CLASS_NAME, CLASS_CD,
+      							CLASSDAY_NAME, CLASSHOUR_START_TIME 
+	    					FROM CHUL_TB_GONGGYUL_SUBJECT 
+	    					WHERE 1=1
+	    					<if test="gonggyul_no != null">
+								AND GONGGYUL_NO = #{gonggyul_no}
+							</if>
+							GROUP BY GONGGYUL_NO, SUBJECT_CD, SUBJECT_DIV_CD, CLASS_NAME, CLASS_CD,
+      						CLASSDAY_NAME, CLASSHOUR_START_TIME
+	    				) GGS 
+	    ON GGS.CLASS_CD = CLS.CLASS_CD
+	    	AND GGS.CLASSHOUR_START_TIME = CLS.CLASSHOUR_START_TIME
+	    ORDER BY CLS.CLASS_CD ASC, CLS.CLASS_NAME ASC, CLS.CLASSHOUR_START_TIME ASC
+	</select>
+	
+	<insert id="gonggyulInsertOk" parameterType="com.icerti.ezcerti.domain.Gonggyul">
+		INSERT INTO CHUL_TB_GONGGYUL (GONGGYUL_NO, UNIV_CD, YEAR, TERM_CD, STUDENT_NO, STUDENT_NAME, GONG_ILJA_START, GONG_ILJA_END, GONG_SAYU, SUBMIT_DATE)
+		VALUES(gonggyulSeq.nextVal, #{univ_cd}, #{year}, #{term_cd}, #{student_no}, #{student_name}, #{gong_ilja_start}, #{gong_ilja_end}, #{gong_sayu}, #{submit_date})
+	</insert>
+	
+	<select id="getGonggyulNo" parameterType="com.icerti.ezcerti.domain.Gonggyul" resultType="String">
+		SELECT GONGGYUL_NO
+		FROM CHUL_TB_GONGGYUL
+		WHERE UNIV_CD = #{univ_cd}
+		  AND YEAR = #{year}
+	  	  AND TERM_CD = #{term_cd}
+	      AND STUDENT_NO = #{student_no}
+		  AND GONG_ILJA_START = #{gong_ilja_start}
+		  AND GONG_ILJA_END = #{gong_ilja_end}
+		  AND VISIBLE_FLAG = 'Y'
+	</select>
+	
+	<insert id="gonggyulSubjectInsertOk" parameterType="com.icerti.ezcerti.domain.Gonggyul">
+		INSERT INTO CHUL_TB_GONGGYUL_SUBJECT 
+		(
+			SELECT 
+				#{gonggyul_no} AS GONGGYUL_NO, SUBJECT_CD, SUBJECT_DIV_CD, CLASS_NAME, CLASS_CD, 
+				CLASSDAY_NAME, #{classhour_start_time}
+			FROM V_CHUL_VW_CLASS
+			WHERE UNIV_CD = #{univ_cd}
+			AND YEAR = #{year}
+			AND TERM_CD = #{term_cd}
+			AND CLASS_CD = #{tmp_class_cd}
+		)
+	</insert>
+	
+	<select id="gonggyulView" parameterType="string" resultMap="Gonggyul">
+		SELECT
+			gonggyul_no,
+			univ_cd,
+	        year,
+	        term_cd,
+	        student_no,
+	        student_name,
+	        to_char(gong_ilja_start, 'yyyy-mm-dd') as gong_ilja_start,
+	        to_char(gong_ilja_end, 'yyyy-mm-dd') as gong_ilja_end,
+	        gong_sayu,
+	        to_char(submit_date, 'yyyy-mm-dd') as submit_date,
+			'Y' as checkbox_flag
+		FROM CHUL_TB_GONGGYUL
+		WHERE gonggyul_no = #{gonggyul_no}
+	</select>
+	
+	<update id="gonggyulModifyOk" parameterType="com.icerti.ezcerti.domain.Gonggyul">
+		UPDATE CHUL_TB_GONGGYUL
+		   SET term_cd = #{term_cd },
+		       gong_ilja_start = #{gong_ilja_start },
+		   	   gong_ilja_end = #{gong_ilja_end },
+			   gong_sayu = #{gong_sayu },
+			   submit_date = #{submit_date }
+		 WHERE gonggyul_no = #{gonggyul_no} 
+	</update>
+	
+	<delete id="gonggyulSubjectAllDeleteOk" parameterType="com.icerti.ezcerti.domain.Gonggyul">
+		DELETE FROM CHUL_TB_GONGGYUL_SUBJECT
+		WHERE gonggyul_no = #{gonggyul_no}
+	</delete>
+	
+	<update id="gonggyulDelete" parameterType="string">
+		UPDATE CHUL_TB_GONGGYUL
+		   SET visible_flag = 'N'
+		 WHERE gonggyul_no = #{chk_no}
+	</update>
+	
+	<select id="getSavedGonggyulDataList" resultType="com.icerti.ezcerti.domain.Gonggyul">
+		 SELECT 
+            GG.UNIV_CD, GG.YEAR, GG.TERM_CD, GGS.CLASS_CD, TO_CHAR(AH.CLASSDAY, 'YYYY-MM-DD') AS CLASSDAY, 
+            GG.STUDENT_NO, GGS.CLASSHOUR_START_TIME
+          FROM CHUL_TB_GONGGYUL GG
+          INNER JOIN CHUL_TB_GONGGYUL_SUBJECT GGS
+             ON GG.GONGGYUL_NO =  GGS.GONGGYUL_NO
+          INNER JOIN CHUL_TB_ATTENDDETHIST AH
+             ON AH.UNIV_CD = GG.UNIV_CD
+            AND AH.YEAR = GG.YEAR
+            AND AH.TERM_CD = GG.TERM_CD
+            AND AH.CLASS_CD = GGS.CLASS_CD
+            AND TRUNC(AH.CLASSDAY) BETWEEN GG.GONG_ILJA_START AND GG.GONG_ILJA_END
+            AND AH.STUDENT_NO = GG.STUDENT_NO
+            AND AH.CLASSHOUR_START_TIME = GGS.CLASSHOUR_START_TIME
+          WHERE GG.VISIBLE_FLAG = 'Y'
+          	AND GG.GONGGYUL_NO = #{gonggyul_no}
+          AND TRUNC(AH.CLASSDAY) <![CDATA[ <= ]]> TRUNC(SYSDATE)
+	</select>
+	
+	<update id="getSavedGonggyulInit" parameterType="com.icerti.ezcerti.domain.Gonggyul">
+		UPDATE CHUL_TB_ATTENDDETHIST
+		   SET ATTEND_STS_CD = 'G023C001',
+		   ATTEND_AUTH_CD = 'G022C001',
+		   ATTEND_AUTH_REASON_CD = 'G024C001'
+         WHERE UNIV_CD = #{univ_cd}
+          AND YEAR = #{year}
+          AND TERM_CD = #{term_cd}
+          AND CLASS_CD = #{class_cd}
+          AND TO_CHAR(CLASSDAY, 'YYYY-MM-DD') = #{classday}
+          AND CLASSHOUR_START_TIME = #{classhour_start_time}
+          AND STUDENT_NO = #{student_no}
+	</update>
+	
+	<update id="gonggyulProc" parameterType="com.icerti.ezcerti.domain.Gonggyul">
+		call CHUL_GONGGYUL_PROC(#{gonggyul_no})
+	</update>
+	
+	<select id="getClassoffManageListCount" parameterType="map" resultType="int">
+		SELECT 
+			COUNT(*)
+		FROM 
+			CHUL_TB_CLASSOFFMANAGE
+		WHERE univ_cd = #{univ_cd}
+			<if test='sdate.equals("")'>  
+			  	AND year = #{year}
+			</if>
+			  AND visible_flag = 'Y'
+			<if test='!term_cd.equals("all")'>  
+				AND term_cd = #{term_cd}
+			</if>
+			
+			<if test='!perform_flag.equals("all")'>  
+				AND perform_flag = #{perform_flag}
+			</if>
+			<if test='!sdate.equals("")'>
+				AND to_char(classday, 'yyyy-mm-dd') BETWEEN #{sdate } and #{edate }
+			</if>
+	</select>
+	
+	<select id="getClassoffManageList" parameterType="map" resultType="com.icerti.ezcerti.domain.ClassoffManage">
+		SELECT * FROM
+			(
+				SELECT 
+					ROWNUM as row_no, A.*
+				FROM 
+				(
+					SELECT *
+					FROM 
+					(
+						SELECT
+							classoffmanage_no,
+							univ_cd,
+							year,
+							term_cd,
+							to_char(classday, 'YY/MM/DD') as classday,
+							to_char(before_classday, 'YY/MM/DD') as before_classday,
+							classoffmanage_sayu,
+							to_char(regdate, 'YYYY-MM-DD') as regdate,
+							perform_flag,
+							to_char(perform_date, 'YY/MM/DD') as perform_date
+						FROM
+							(
+								SELECT * FROM CHUL_TB_CLASSOFFMANAGE
+								WHERE univ_cd = #{univ_cd}
+									<if test='sdate.equals("")'>
+										AND year = #{year}
+									</if>
+									AND visible_flag = 'Y'
+								    <if test='!term_cd.equals("all")'>  
+										AND term_cd = #{term_cd}
+									</if>
+								
+									<if test='!perform_flag.equals("all")'>  
+										AND perform_flag = #{perform_flag}
+									</if>
+									
+									<if test='!sdate.equals("")'>
+										AND to_char(classday, 'yyyy-mm-dd') BETWEEN #{sdate } and #{edate }
+									</if>
+									
+								ORDER BY regdate desc
+							)
+					) A			
+					WHERE 1=1		
+					<choose>
+						<when test='sortField != null and !sortField.equals("")'>
+							ORDER BY ${sortField} ${sortOrder}
+						</when>
+						<otherwise>
+							ORDER BY REGDATE DESC
+						</otherwise>
+					</choose>	
+				) A
+				<![CDATA[			
+				WHERE rownum <= #{endRow}
+			) 
+		WHERE row_no >= #{startRow}
+	]]>
+	</select>
+	
+	<select id="duplicationClassoffManage" parameterType="com.icerti.ezcerti.domain.ClassoffManage" resultType="int">
+		SELECT COUNT(*)
+		FROM CHUL_TB_CLASSOFFMANAGE
+	    WHERE UNIV_CD = #{univ_cd}
+	      AND YEAR = #{year}
+	      AND VISIBLE_FLAG = 'Y'
+	      AND TERM_CD = #{term_cd}
+	      AND TRUNC(CLASSDAY) = #{classday}
+	      <if test="classoffmanage_no != '' and classoffmanage_no != null">
+	      	AND CLASSOFFMANAGE_NO != #{classoffmanage_no}
+	      </if>
+	</select>
+	
+	<insert id="classoffManageInsertOk" parameterType="com.icerti.ezcerti.domain.ClassoffManage">
+		INSERT INTO CHUL_TB_CLASSOFFMANAGE (CLASSOFFMANAGE_NO, UNIV_CD, YEAR, TERM_CD, CLASSDAY, BEFORE_CLASSDAY, CLASSOFFMANAGE_SAYU)
+		VALUES(classoffmanageseq.nextVal, #{univ_cd}, #{year}, #{term_cd}, #{classday}, #{before_classday}, #{classoffmanage_sayu})
+	</insert>
+	
+	<select id="classoffManageView" parameterType="string" resultType="com.icerti.ezcerti.domain.ClassoffManage">
+		SELECT
+			classoffmanage_no,
+			univ_cd,
+			year,
+			term_cd,
+			to_char(classday, 'YY/MM/DD') as classday,
+			to_char(before_classday, 'YY/MM/DD') as before_classday,
+			classoffmanage_sayu,
+			to_char(regdate, 'YYYY-MM-DD') as regdate,
+			perform_flag,
+			to_char(perform_date, 'YY/MM/DD') as perform_date
+		FROM CHUL_TB_CLASSOFFMANAGE
+		WHERE classoffmanage_no = #{classoffmanage_no}
+	</select>
+	
+	<update id="classoffManageModifyOk" parameterType="com.icerti.ezcerti.domain.ClassoffManage">
+		UPDATE CHUL_TB_CLASSOFFMANAGE
+		   SET classday = #{classday },
+		   	   before_classday = #{before_classday },
+			   classoffmanage_sayu = #{classoffmanage_sayu }
+		 WHERE classoffmanage_no = #{classoffmanage_no} 
+	</update>
+	
+	<update id="classoffManageDelete" parameterType="string">
+		UPDATE CHUL_TB_CLASSOFFMANAGE
+		   SET visible_flag = 'N'
+		 WHERE classoffmanage_no = #{chk_no}
+	</update>
+	
+	<select id="classoffManagePerform" parameterType="string">
+		call CHUL_CLASSOFF_PROC(#{chk_no})
+	</select>
+
+	<update id="classoffManagePerformUpdateFlag">
+		UPDATE CHUL_TB_CLASSOFFMANAGE
+		   SET PERFORM_FLAG = 'Y',
+			   PERFORM_DATE = sysdate
+		 WHERE 1=1
+		   AND to_char(CLASSDAY, 'YYYY-MM-DD') > to_char(sysdate, 'YYYY-MM-DD')
+		   AND PERFORM_FLAG = 'N'
+	</update>
+
+	<select id="univYearGetDayOfWeekCnt" parameterType="com.icerti.ezcerti.domain.Univ" resultType="map">
+		WITH CTE AS (
+					 SELECT TO_DATE(#{term_start_date, jdbcType=DATE}) AS START_DT
+                       FROM DUAL
+                      UNION
+                     SELECT (TO_DATE(#{term_start_date, jdbcType=DATE}) + LEVEL) AS START_DT
+                       FROM DUAL
+                    CONNECT BY LEVEL <![CDATA[ <= ]]> TO_DATE(#{term_end_date, jdbcType=DATE}) - TO_DATE(#{term_start_date, jdbcType=DATE})
+			   	    )
+		     SELECT TO_CHAR(START_DT, 'D') AS DAY_NUM
+				  , TO_CHAR(START_DT, 'DAY') AS DAY_NM
+				  , COUNT(*) AS CNT
+		  	   FROM CTE
+		 	  WHERE START_DT NOT BETWEEN NVL(#{bogang_start, jdbcType=DATE}, '99990101') AND NVL(#{bogang_end, jdbcType=DATE}, '99990101')
+		   		AND START_DT NOT BETWEEN NVL(#{noclass_start, jdbcType=DATE}, '99990101') AND NVL(#{noclass_end, jdbcType=DATE}, '99990101')
+		 	  GROUP BY TO_CHAR(START_DT, 'D')
+					 , TO_CHAR(START_DT, 'DAY')
+		 	  ORDER BY TO_CHAR(START_DT, 'D')
+	</select>
+
+	<insert id="univYearInsertOk" parameterType="com.icerti.ezcerti.domain.Univ">
+		INSERT INTO CHUL_TB_UNIV
+		           ( UNIV_CD
+		           , YEAR
+		           , TERM_CD
+		           , UNIV_NAME
+		           , TERM_NAME
+		           , TERM_START_DATE
+		           , TERM_END_DATE
+		           , UNIV_STS_CD
+		           , BOGANG_START
+		           , BOGANG_END
+		           , NOCLASS_START
+		           , NOCLASS_END
+		           , LSSN_ADMT_DT
+		           , REG_DATE
+<!--
+		           , CHUL_TERM
+		           , CHUL_START_DT
+		           , CHUL_END_DT
+ -->
+		           )
+		     VALUES
+		           ( #{univ_cd}
+		           , #{year}
+		           , #{term_cd}
+		           , #{univ_name}
+		           , #{term_name}
+				   , #{term_start_date, jdbcType=DATE}
+				   , #{term_end_date, jdbcType=DATE}
+	       		   , #{univ_sts_cd}
+				   , #{bogang_start, jdbcType=DATE}
+				   , #{bogang_end, jdbcType=DATE}
+				   , #{noclass_start, jdbcType=DATE}
+				   , #{noclass_end, jdbcType=DATE}
+				   , #{lssn_admt_dt, jdbcType=DATE}
+	       		   , sysdate
+<!--
+	       		   , #{chul_term, jdbcType=INTEGER}
+	       		   , #{chul_start_dt, jdbcType=VARCHAR}
+				   , #{chul_end_dt, jdbcType=VARCHAR}
+ -->
+		           )
+	</insert>
+
+	<select id="univYearView" parameterType="map" resultType="com.icerti.ezcerti.domain.Univ">
+		SELECT univ_cd
+			 , year
+			 , term_cd
+			 , univ_name
+			 , term_name
+			 , term_start_date
+			 , term_end_date
+			 , univ_sts_cd
+			 , bogang_start
+			 , bogang_end
+			 , noclass_start
+			 , noclass_end
+			 , to_char ( to_date ( LSSN_ADMT_DT ) ,'YYYY-MM-DD' ) as lssn_admt_dt
+			 , reg_date
+<!--
+			 , chul_term
+			 , to_char ( to_date ( chul_start_dt ) ,'YYYY-MM-DD' ) as chul_start_dt
+			 , to_char ( to_date ( chul_end_dt ) ,'YYYY-MM-DD' ) as chul_end_dt
+ -->
+		  FROM CHUL_TB_UNIV
+		 WHERE univ_cd = #{univ_cd}
+		   AND year = #{year}
+		   AND term_cd = #{term_cd}
+	</select>
+
+	<update id="univYearModifyOk" parameterType="com.icerti.ezcerti.domain.Univ">
+		UPDATE CHUL_TB_UNIV
+		   SET TERM_START_DATE = #{term_start_date, jdbcType=DATE}
+			 , TERM_END_DATE = #{term_end_date, jdbcType=DATE}
+			 , UNIV_STS_CD     = #{univ_sts_cd}
+			 , BOGANG_START   = #{bogang_start, jdbcType=DATE}
+			 , BOGANG_END   = #{bogang_end, jdbcType=DATE}
+			 , NOCLASS_START   = #{noclass_start, jdbcType=DATE}
+			 , NOCLASS_END   = #{noclass_end, jdbcType=DATE}
+			 , LSSN_ADMT_DT   = #{lssn_admt_dt, jdbcType=DATE}
+<!--
+			 , CHUL_START_DT   = #{chul_start_dt, jdbcType=VARCHAR}
+			 , CHUL_END_DT   = #{chul_end_dt, jdbcType=VARCHAR}
+			 , CHUL_TERM 	   = #{chul_term, jdbcType=INTEGER}
+ -->
+		 WHERE YEAR = #{year}
+		   AND TERM_CD = #{term_cd}
+	</update>
+
+	<update id="univYearStscd" parameterType="com.icerti.ezcerti.domain.Univ">
+		UPDATE CHUL_TB_UNIV
+		   SET UNIV_STS_CD     = 'G004C002'
+		 WHERE YEAR || TERM_CD != #{year} || #{term_cd}
+	</update>
+
+	<delete id="univYearDeleteOkUnivTerm" parameterType="map">
+		DELETE
+		  FROM CHUL_TB_UNIV
+		 WHERE YEAR = #{year}
+		   AND TERM_CD = #{term_cd}
+	</delete>
+
+	<delete id="univYearDeleteOkClassday" parameterType="map">
+		DELETE
+		  FROM CHUL_TB_CLASSDAY
+		 WHERE YEAR = #{year}
+		   AND TERM_CD = #{term_cd}
+	</delete>
+
+	<select id="createClassday">
+		call CHUL_CREATE_CLASSDAY(#{year}, #{term_cd})
+	</select>
+	
+</mapper>

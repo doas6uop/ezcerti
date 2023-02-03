@@ -1,0 +1,2499 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.icerti.ezcerti.admin.dao.AdminStandMapper">
+
+	<select id="getAdminStandCodeCount" parameterType="map" resultType="int">
+		SELECT COUNT(*)
+		  FROM (
+							SELECT CODE_GRP_CD, CODE_GRP_NAME
+		         	  FROM CHUL_TB_CODEMASTER
+		             WHERE 1=1
+		              <if test="!searchValue.equals('')">
+		                AND CODE_GRP_NAME LIKE #{searchValue} || '%'
+		              </if>
+		             GROUP BY CODE_GRP_CD, CODE_GRP_NAME
+						)
+	</select>
+
+	<select id="getAdminStandCode" parameterType="map" resultType="hashmap">
+		SELECT *
+		  FROM (
+		    SELECT CODE_GRP_CD
+		         , CODE_GRP_NAME
+		         , ROWNUM AS RNUM
+		     FROM (
+		            SELECT CODE_GRP_CD
+		                 , CODE_GRP_NAME
+		              FROM CHUL_TB_CODEMASTER
+		             WHERE 1=1
+		              <if test="!searchValue.equals('')">
+		                AND CODE_GRP_NAME LIKE #{searchValue} || '%'
+		              </if>
+		             GROUP BY CODE_GRP_CD, CODE_GRP_NAME
+		             ORDER BY CODE_GRP_CD
+		            )
+		        )
+		  WHERE RNUM BETWEEN #{startRow} AND #{endRow}
+	</select>
+
+	<select id="getAdminStandDetailCode" parameterType="map" resultType="hashmap">
+
+	   SELECT CODE_CD
+	        , CODE_NAME
+	        , REG_ETC
+	     FROM CHUL_TB_CODEMASTER
+	    WHERE CODE_GRP_CD = #{searchValue}
+
+	</select>
+
+	<select id="getAdminStandProfCount" parameterType="map" resultType="int">
+
+	     SELECT COUNT(*)
+	      FROM UNIV_TB_PROF
+	       WHERE 1=1
+	        <if test="!searchValue.equals('')">
+	         AND PROF_NAME LIKE #{searchValue} || '%'
+	        </if>
+
+	</select>
+
+	<select id="getAdminStandProf" parameterType="map" resultType="hashmap">
+
+		SELECT A.*
+		     , NVL(C.CODE_NAME, A.PROF_STS_CD) AS PROF_STS_NM
+		  FROM (
+		        SELECT PROF_NO
+		             , PROF_NAME
+		             , PROF_PSSWD
+		             , DEPT_NAME
+		             , HP_NO
+		             , EMAIL_ADDR
+		             , PROF_STS_CD
+		             , ROWNUM AS RNUM
+		          FROM (
+		                  SELECT PROF_NO
+		                       , PROF_NAME
+		                       , '*******' AS PROF_PSSWD
+		                       , DEPT_NAME
+		                       , HP_NO
+		                       , EMAIL_ADDR
+		                       , PROF_STS_CD
+		                    FROM UNIV_TB_PROF
+		                   WHERE 1=1
+		                    <if test="!searchValue.equals('')">
+		                     AND PROF_NAME LIKE #{searchValue} || '%'
+		                    </if>
+		                   ORDER BY PROF_NO
+		              )
+		        ) A
+	    LEFT OUTER JOIN CHUL_TB_CODEMASTER C
+	      ON A.PROF_STS_CD = C.CODE
+	    WHERE RNUM BETWEEN #{startRow} AND #{endRow}
+
+	</select>
+
+	<select id="getAdminStandStudentCount" parameterType="map" resultType="int">
+
+	     SELECT COUNT(*)
+	      FROM UNIV_TB_STUDENT
+	       WHERE 1=1
+	       <if test="!searchValue.equals('')">
+	       AND STUDENT_NAME LIKE #{searchValue} || '%'
+	      </if>
+
+	</select>
+
+	<select id="getAdminStandStudent" parameterType="map" resultType="hashmap">
+	SELECT A.*
+	     , C.CODE_NAME AS STUDENT_STS_NM
+		  FROM (
+		        SELECT STUDENT_NO
+		             , STUDENT_NAME
+		             , STUDENT_PSSWD
+		             , DEPT_NAME
+		             , HP_NO
+		             , EMAIL_ADDR
+		             , STUDENT_NATION
+	                 , STUDENT_STS_CD
+		             , ROWNUM AS RNUM
+		          FROM (
+		                  SELECT STUDENT_NO
+		                       , STUDENT_NAME
+		                       , '*******' AS STUDENT_PSSWD
+		                       , DEPT_NAME
+		                       , HP_NO
+		                       , EMAIL_ADDR
+	                           , STUDENT_NATION
+		                       , STUDENT_STS_CD
+		                    FROM UNIV_TB_STUDENT
+		                   WHERE 1=1
+		                    <if test="!searchValue.equals('')">
+		                     AND STUDENT_NAME LIKE #{searchValue} || '%'
+		                    </if>
+		                   ORDER BY STUDENT_NO
+		              )
+		        ) A
+	    LEFT OUTER JOIN CHUL_TB_CODEMASTER C
+	      ON A.STUDENT_STS_CD = C.CODE
+	   WHERE RNUM BETWEEN #{startRow} AND #{endRow}
+	</select>
+
+	<select id="getAdminStandYearCount" parameterType="map" resultType="int">
+	   SELECT COUNT(*)
+	     FROM CHUL_TB_UNIV
+	    WHERE 1=1
+	    <if test="!searchValue.equals('')">
+	     AND YEAR = #{searchValue}
+	    </if>
+	</select>
+
+	<select id="getAdminStandYear" parameterType="map" resultType="hashmap">
+		SELECT A.*
+	     	 , C.CODE_NAME AS UNIV_STS_NM
+		  FROM (
+		        SELECT UNIV_CD
+		        	 , YEAR
+		             , TERM_CD
+		             , UNIV_NAME
+					 , TERM_NAME
+		             , TO_CHAR(TERM_START_DATE, 'YYYY-MM-DD') AS TERM_START_DATE
+		             , TO_CHAR(TERM_END_DATE, 'YYYY-MM-DD') AS TERM_END_DATE
+		             , UNIV_STS_CD
+					 , TO_CHAR(BOGANG_START, 'YYYY-MM-DD') AS BOGANG_START
+					 , TO_CHAR(BOGANG_END, 'YYYY-MM-DD') AS BOGANG_END
+					 , TO_CHAR(NOCLASS_START, 'YYYY-MM-DD') AS NOCLASS_START
+					 , TO_CHAR(NOCLASS_END, 'YYYY-MM-DD') AS NOCLASS_END
+					 , TO_CHAR(TO_DATE(LSSN_ADMT_DT), 'YYYY-MM-DD') AS LSSN_ADMT_DT
+<!--
+					 , TO_CHAR(TO_DATE(CHUL_START_DT), 'YYYY-MM-DD') AS CHUL_START_DT
+					 , TO_CHAR(TO_DATE(CHUL_END_DT), 'YYYY-MM-DD') AS CHUL_END_DT
+					 , CHUL_TERM
+ -->
+		             , ROW_NUMBER() OVER (ORDER BY YEAR DESC, TERM_START_DATE DESC) AS RNUM
+		          FROM (
+	                    SELECT UNIV_CD
+						     , YEAR
+	                         , TERM_CD
+	                         , UNIV_NAME
+							 , TERM_NAME
+	                         , TERM_START_DATE
+	                         , TERM_END_DATE
+	                         , UNIV_STS_CD
+							 , BOGANG_START
+							 , BOGANG_END
+							 , NOCLASS_START
+							 , NOCLASS_END
+							 , LSSN_ADMT_DT
+<!--
+							 , CHUL_START_DT
+							 , CHUL_END_DT
+							 , CHUL_TERM
+ -->
+	                      FROM CHUL_TB_UNIV
+		                 WHERE 1=1
+		                   <if test="!searchValue.equals('')">
+		                   AND YEAR = #{searchValue}
+		                   </if>
+		               ) A
+		       ) A
+	      LEFT OUTER JOIN CHUL_TB_CODEMASTER C
+	        ON A.UNIV_STS_CD = C.CODE
+	   	 WHERE RNUM BETWEEN #{startRow} AND #{endRow}
+       	 ORDER BY A.TERM_START_DATE DESC
+	</select>
+
+	<select id="getAdminStandClassdayCount" parameterType="map" resultType="int">
+	   SELECT COUNT(*)
+	     FROM CHUL_TB_CLASSDAY
+	    WHERE 1=1
+	      AND YEAR||TERM_CD = #{searchValue}
+	</select>
+
+	<select id="getAdminStandClassday" parameterType="map" resultType="hashmap">
+		SELECT A.*
+			 , D.CODE_NAME AS TERM_NM
+			 , E.CODE_NAME AS CLASSDAY_NM
+		  FROM (
+		        SELECT YEAR
+	               , TERM_CD
+	               , CLASSDAY
+	               , CLASSDAY_NO
+	               , CLASSDAY_NAME
+	               , CLASSDAY_CD
+		           , ROWNUM AS RNUM
+		          FROM (
+	                    SELECT YEAR
+	                         , TERM_CD
+	                         , TO_CHAR(CLASSDAY, 'YYYY-MM-DD') AS CLASSDAY
+	                         , CLASSDAY_NO
+	                         , CLASSDAY_NAME
+	                         , CLASSDAY_CD
+	                      FROM CHUL_TB_CLASSDAY
+		                 WHERE 1=1
+		                   AND YEAR||TERM_CD = #{searchValue}
+	   					 ORDER BY CLASSDAY
+		              )
+		        ) A
+	    LEFT OUTER JOIN CHUL_TB_CODEMASTER D
+	      ON A.TERM_CD = D.CODE
+	    LEFT OUTER JOIN CHUL_TB_CODEMASTER E
+	      ON A.CLASSDAY_CD = E.CODE
+	   WHERE RNUM BETWEEN #{startRow} AND #{endRow}
+	   ORDER BY A.CLASSDAY
+	</select>
+
+	<select id="getAdminStandOrganizationCount" parameterType="map" resultType="int">
+
+	   SELECT COUNT(*)
+	     FROM UNIV_TB_COLL
+	    WHERE 1=1
+	      AND YEAR||TERM_CD = #{searchValue}
+
+	</select>
+
+	<select id="getAdminStandOrganization" parameterType="map" resultType="hashmap">
+		SELECT A.*
+		  FROM (
+		        SELECT UNIV_CD
+	                 , YEAR
+	                 , TERM_CD
+	                 , COLL_CD
+	               	 , COLL_NAME
+		             , ROWNUM AS RNUM
+		          FROM (
+	                    SELECT UNIV_CD
+	                         , YEAR
+	                         , TERM_CD
+	                         , COLL_CD
+	                         , COLL_NAME
+	                      FROM UNIV_TB_COLL
+		                 WHERE 1=1
+		                   AND YEAR||TERM_CD = #{searchValue}
+		              )
+		        ) A
+	   	WHERE RNUM BETWEEN #{startRow} AND #{endRow}
+	</select>
+
+	<select id="getAdminStandDetailOrganizationCount" parameterType="map" resultType="int">
+
+	   SELECT COUNT(*)
+	     FROM UNIV_TB_DEPT
+	    WHERE 1=1
+	      AND YEAR||TERM_CD = #{searchValue}
+	      AND COLL_CD = #{searchValue2}
+
+	</select>
+
+	<select id="getAdminStandDetailOrganization" parameterType="map" resultType="hashmap">
+		SELECT A.*
+		  FROM (
+		        SELECT UNIV_CD
+	                 , YEAR
+	                 , TERM_CD
+	                 , COLL_CD
+	                 , DEPT_CD
+	               	 , DEPT_NAME
+		             , ROWNUM AS RNUM
+		          FROM (
+	                    SELECT UNIV_CD
+	                         , YEAR
+	                         , TERM_CD
+	                         , COLL_CD
+	                         , DEPT_CD
+	                         , DEPT_NAME
+	                      FROM UNIV_TB_DEPT
+		                 WHERE 1=1
+		                   AND YEAR||TERM_CD = #{searchValue}
+		                   AND COLL_CD = #{searchValue2}
+	                     ORDER BY TO_NUMBER(DEPT_CD)
+		              )
+		        ) A
+	   WHERE RNUM BETWEEN #{startRow} AND #{endRow}
+
+	</select>
+
+	<select id="getAdminStandClasshourCount" parameterType="map" resultType="int">
+
+	   SELECT COUNT(*)
+	     FROM UNIV_TB_CLASSHOUR
+	    WHERE 1=1
+	      AND YEAR||TERM_CD = #{searchValue}
+
+	</select>
+
+	<select id="getAdminStandClasshour" parameterType="map" resultType="hashmap">
+		SELECT A.* , D.CODE_NAME AS TERM_NM
+		  FROM (
+		        SELECT YEAR
+	               	 , TERM_CD
+		             , CLASSHOUR
+		             , CLASSHOUR_CD
+		             , CLASSHOUR_NAME
+		             , CLASSHOUR_START_TIME
+		             , CLASSHOUR_END_TIME
+		             , ROWNUM AS RNUM
+		          FROM (
+	                    SELECT YEAR
+	                         , TERM_CD
+	                         , CLASSHOUR
+	                         , CLASSHOUR_START_TIME || CLASSHOUR_END_TIME AS CLASSHOUR_CD
+	                         , CLASSHOUR_NAME
+	                         , CLASSHOUR_START_TIME
+	                         , CLASSHOUR_END_TIME
+	                      FROM UNIV_TB_CLASSHOUR
+		                 WHERE 1=1
+		                   AND YEAR||TERM_CD = #{searchValue}
+
+		                 <choose>
+							<when test='univ_cd.equals("G001C003")'>
+								ORDER BY COLL_CD, CLASSHOUR_START_TIME, CLASSHOUR_END_TIME
+							</when>
+							<otherwise>
+								ORDER BY CLASSHOUR_START_TIME, CLASSHOUR_END_TIME
+							</otherwise>
+		                 </choose>
+		              )
+		        ) A
+	    LEFT OUTER JOIN CHUL_TB_CODEMASTER D
+	      ON A.TERM_CD = D.CODE
+	   WHERE RNUM BETWEEN #{startRow} AND #{endRow}
+	</select>
+
+	<select id="getAdminStandClassroomCount" parameterType="map" resultType="int">
+
+		SELECT COUNT(*)
+		  FROM (
+	           SELECT BUILD_CODE, BUILD_NAME
+	             FROM UNIV_TB_CLASSROOM
+	            WHERE 1=1
+	              AND YEAR||TERM_CD = #{searchValue}
+	            GROUP BY BUILD_CODE, BUILD_NAME
+						)
+	</select>
+
+	<select id="getAdminStandClassroom" parameterType="map" resultType="hashmap">
+		SELECT A.*
+		  FROM (
+		        SELECT UNIV_CD
+	                 , YEAR
+	                 , TERM_CD
+	                 , BUILD_CODE
+	               	 , BUILD_NAME
+		             , ROWNUM AS RNUM
+		          FROM (
+				        SELECT UNIV_CD
+			                 , YEAR
+			                 , TERM_CD
+			                 , BUILD_CODE
+						     , BUILD_NAME
+						  FROM UNIV_TB_CLASSROOM
+		                 WHERE 1=1
+		                   AND YEAR||TERM_CD = #{searchValue}
+		                 GROUP BY UNIV_CD
+			                 , YEAR
+			                 , TERM_CD
+			                 , BUILD_CODE
+						     , BUILD_NAME
+		                 ORDER BY BUILD_CODE
+		              )
+		        ) A
+	   	WHERE RNUM BETWEEN #{startRow} AND #{endRow}
+	</select>
+
+	<select id="getAdminStandDetailClassroomCount" parameterType="map" resultType="int">
+
+	     SELECT COUNT(*)
+	       FROM UNIV_TB_CLASSROOM
+	      WHERE 1=1
+	        AND YEAR||TERM_CD = #{searchValue}
+	        AND BUILD_CODE = #{searchValue2}
+	</select>
+
+	<select id="getAdminStandDetailClassroom" parameterType="map" resultType="hashmap">
+		SELECT A.*
+		  FROM (
+		        SELECT UNIV_CD
+	                 , YEAR
+	                 , TERM_CD
+		             , CLASSROOM_NO
+	               	 , CLASSROOM_NAME
+		             , ROWNUM AS RNUM
+		          FROM (
+				        SELECT UNIV_CD
+			                 , YEAR
+			                 , TERM_CD
+				             , CLASSROOM_NO
+	               	 		 , CLASSROOM_NAME
+	                      FROM UNIV_TB_CLASSROOM
+		                 WHERE 1=1
+		                   AND YEAR||TERM_CD = #{searchValue}
+		                   AND BUILD_CODE = #{searchValue2}
+	                     ORDER BY CLASSROOM_NO
+		              )
+		        ) A
+	   WHERE RNUM BETWEEN #{startRow} AND #{endRow}
+
+	</select>
+
+	<select id="getAdminStandSubjectCount" parameterType="map" resultType="int">
+
+	     SELECT COUNT(*)
+	       FROM UNIV_TB_SUBJECT
+	      WHERE 1=1
+	        AND YEAR = #{year}
+	        AND TERM_CD = #{term_cd}
+	      <if test="!searchValue2.equals('')">
+	        AND SUBJECT_NAME LIKE #{searchValue2} || '%'
+	      </if>
+	</select>
+
+	<select id="getAdminStandSubject" parameterType="map" resultType="hashmap">
+		SELECT A.*
+		  FROM (
+		        SELECT UNIV_CD
+	                 , YEAR
+	                 , TERM_CD
+		             , SUBJECT_CD
+		             , SUBJECT_NAME
+		             , SUBJECT_DIV_CD
+		             , CLASS_POINT
+		             , CLASS_NUM
+		             , CLASSHOUR_START_DAY
+		             , CLASSHOUR_END_DAY
+		             , CONCTR_CLASS_YN
+		             , IS_TEAM
+		             , ONLINE_FLAG
+		             , ROWNUM AS RNUM
+		          FROM (
+				        SELECT UNIV_CD
+			                 , YEAR
+			                 , TERM_CD
+	                         , SUBJECT_CD
+	                         , SUBJECT_NAME
+	                         , SUBJECT_DIV_CD
+	                         , CLASS_POINT
+	                         , CLASS_NUM
+	                         , TO_CHAR(TO_DATE(CLASSHOUR_START_DAY,'YYYY-MM-DD'), 'YYYY-MM-DD') AS CLASSHOUR_START_DAY
+	                         , TO_CHAR(TO_DATE(CLASSHOUR_END_DAY,'YYYY-MM-DD'), 'YYYY-MM-DD') AS CLASSHOUR_END_DAY
+	                         , CONCTR_CLASS_YN
+	                         , IS_TEAM
+	                         , ONLINE_FLAG
+	                      FROM UNIV_TB_SUBJECT
+		                 WHERE 1=1
+					       AND YEAR = #{year}
+					       AND TERM_CD = #{term_cd}
+	                      <if test="!searchValue2.equals('')">
+		                   AND SUBJECT_NAME LIKE #{searchValue2} || '%'
+		                  </if>
+		                 ORDER BY SUBJECT_CD
+		              )
+		        ) A
+	   WHERE RNUM BETWEEN #{startRow} AND #{endRow}
+	</select>
+
+	<select id="getAdminStandClassCount" parameterType="map" resultType="int">
+
+	     SELECT COUNT(*)
+	       FROM UNIV_TB_CLASS
+	      WHERE 1=1
+	        AND YEAR = #{year}
+	        AND TERM_CD = #{term_cd}
+	        AND SUBJECT_CD = #{searchValue2}
+	        AND SUBJECT_DIV_CD = #{searchValue3}
+	</select>
+
+	<select id="getAdminStandClass" parameterType="map" resultType="hashmap">
+		SELECT A.*, D.CODE_NAME AS CLASS_PROG_NM
+		  FROM (
+		        SELECT UNIV_CD
+	                 , YEAR
+	                 , TERM_CD
+		             , SUBJECT_CD
+		             , SUBJECT_DIV_CD
+		             , PROF_NO
+				     , PROF_NAME
+				     , PROF_SEQ
+				     , CLASSDAY_NAME
+				     , CLASSHOUR_START_TIME
+				     , CLASSHOUR_END_TIME
+				     , CLASS_NUM
+				     , ATTENDEE_CNT
+				     , CLASS_PROG_CD
+		             , RANK() OVER (ORDER BY PROF_NO, SORT_DIV, CLASSHOUR_START_TIME, CLASSHOUR_END_TIME) AS RNUM
+		          FROM (
+				        SELECT UNIV_CD
+			                 , YEAR
+			                 , TERM_CD
+	                         , SUBJECT_CD
+	                         , SUBJECT_DIV_CD
+	                         , PROF_NO
+						     , PROF_NAME
+						     , CASE WHEN PROF_SEQ = '1' THEN '주'
+						            WHEN PROF_SEQ = '0' THEN '부'
+						            ELSE ''
+						       END AS PROF_SEQ
+						     , CLASSDAY_NAME
+						     , CLASSHOUR_START_TIME
+						     , CLASSHOUR_END_TIME
+						     , CLASS_NUM
+						     , ATTENDEE_CNT
+						     , CLASS_PROG_CD
+							 , (CASE WHEN CLASSDAY_NAME = '월' THEN 1
+							         WHEN CLASSDAY_NAME = '화' THEN 2
+							         WHEN CLASSDAY_NAME = '수' THEN 3
+							         WHEN CLASSDAY_NAME = '목' THEN 4
+							         WHEN CLASSDAY_NAME = '금' THEN 5
+							         WHEN CLASSDAY_NAME = '토' THEN 6
+							         WHEN CLASSDAY_NAME = '일' THEN 7
+							       ELSE 0 END) AS SORT_DIV
+						  FROM UNIV_TB_CLASS
+		                 WHERE 1=1
+					       AND YEAR = #{year}
+					       AND TERM_CD = #{term_cd}
+		                   AND SUBJECT_CD = #{searchValue2}
+		                   AND SUBJECT_DIV_CD = #{searchValue3}
+		              )
+		        ) A
+	    LEFT OUTER JOIN CHUL_TB_CODEMASTER D
+	      ON A.CLASS_PROG_CD = D.CODE
+	   WHERE RNUM BETWEEN #{startRow} AND #{endRow}
+	</select>
+
+	<select id="getAdminStandAddinfoCount" parameterType="map" resultType="int">
+
+	   SELECT COUNT(*) AS CNT
+	     FROM (
+		       SELECT A.UNIV_CD
+	                , A.YEAR
+	                , A.TERM_CD
+	                , A.SUBJECT_CD
+	                , A.SUBJECT_NAME
+	                , A.SUBJECT_DIV_CD
+	                , A.CLASS_POINT
+	                , A.CLASS_NUM
+	                , A.CLASSHOUR_START_DAY
+	                , A.CLASSHOUR_END_DAY
+	                , A.CONCTR_CLASS_YN
+	                , A.IS_TEAM
+	                , A.ONLINE_FLAG
+	                , B.PROF_NO
+	                , B.PROF_NAME
+	            FROM UNIV_TB_SUBJECT A
+	            LEFT OUTER JOIN UNIV_TB_CLASS B
+	              ON A.YEAR = B.YEAR
+	             AND A.TERM_CD = B.TERM_CD
+	             AND A.SUBJECT_CD = B.SUBJECT_CD
+	             AND A.SUBJECT_DIV_CD = B.SUBJECT_DIV_CD
+	           WHERE 1=1
+		         AND A.YEAR = #{year}
+		         AND A.TERM_CD = #{term_cd}
+	           <if test="!searchValue2.equals('')">
+	              AND (B.PROF_NO LIKE #{searchValue2} || '%' OR B.PROF_NAME LIKE #{searchValue2} || '%')
+	           </if>
+	           <if test="!searchValue3.equals('')">
+	              AND A.SUBJECT_NAME LIKE #{searchValue3} || '%'
+	           </if>
+	           GROUP BY A.UNIV_CD
+	                  , A.YEAR
+	                  , A.TERM_CD
+	                  , A.SUBJECT_CD
+	                  , A.SUBJECT_NAME
+	                  , A.SUBJECT_DIV_CD
+	                  , A.CLASS_POINT
+	                  , A.CLASS_NUM
+	                  , A.CLASSHOUR_START_DAY
+	                  , A.CLASSHOUR_END_DAY
+	                  , A.CONCTR_CLASS_YN
+	                  , A.IS_TEAM
+	                  , A.ONLINE_FLAG
+	                  , B.PROF_NO
+	                  , B.PROF_NAME
+	           ORDER BY SUBJECT_CD
+	           )
+
+	</select>
+
+	<select id="getAdminStandAddinfo" parameterType="map" resultType="hashmap">
+	SELECT A.*
+	  FROM (
+	        SELECT A.*
+	             , ROWNUM AS RNUM
+	          FROM (
+			        SELECT A.UNIV_CD
+		                 , A.YEAR
+		                 , A.TERM_CD
+		                 , A.SUBJECT_CD
+	                     , A.SUBJECT_NAME
+	                     , A.SUBJECT_DIV_CD
+	                     , A.CLASS_POINT
+	                     , A.CLASS_NUM
+	                     , TO_CHAR(TO_DATE(CLASSHOUR_START_DAY,'YYYY-MM-DD'), 'YYYY-MM-DD') AS CLASSHOUR_START_DAY
+	                     , TO_CHAR(TO_DATE(CLASSHOUR_END_DAY,'YYYY-MM-DD'), 'YYYY-MM-DD') AS CLASSHOUR_END_DAY
+	                     , A.CONCTR_CLASS_YN
+	                     , A.IS_TEAM
+	                     , A.ONLINE_FLAG
+	                     , B.PROF_NO
+	                     , B.PROF_NAME
+	                 FROM UNIV_TB_SUBJECT A
+	                 LEFT OUTER JOIN UNIV_TB_CLASS B
+	                   ON A.YEAR = B.YEAR
+	                  AND A.TERM_CD = B.TERM_CD
+	                  AND A.SUBJECT_CD = B.SUBJECT_CD
+	                  AND A.SUBJECT_DIV_CD = B.SUBJECT_DIV_CD
+	                WHERE 1=1
+			          AND A.YEAR = #{year}
+			          AND A.TERM_CD = #{term_cd}
+	                <if test="!searchValue2.equals('')">
+	                   AND (B.PROF_NO LIKE #{searchValue2} || '%' OR B.PROF_NAME LIKE #{searchValue2} || '%')
+	                </if>
+	                <if test="!searchValue3.equals('')">
+	                   AND A.SUBJECT_NAME LIKE #{searchValue3} || '%'
+	                </if>
+	                GROUP BY A.UNIV_CD
+		                   , A.YEAR
+		                   , A.TERM_CD
+		                   , A.SUBJECT_CD
+	                       , A.SUBJECT_NAME
+	                       , A.SUBJECT_DIV_CD
+	                       , A.CLASS_POINT
+	                       , A.CLASS_NUM
+	                       , A.CLASSHOUR_START_DAY
+	                       , A.CLASSHOUR_END_DAY
+	                       , A.CONCTR_CLASS_YN
+	                       , A.IS_TEAM
+	                       , A.ONLINE_FLAG
+	                       , B.PROF_NO
+	                       , B.PROF_NAME
+	                ORDER BY SUBJECT_CD
+	                ) A
+	        ) A
+	  WHERE RNUM BETWEEN #{startRow} AND #{endRow}
+	</select>
+
+	<select id="getAdminStandDetailAddinfoCount" parameterType="map" resultType="int">
+	   SELECT COUNT(*) AS CNT
+	     FROM (
+		      SELECT UNIV_CD
+	               , YEAR
+	               , TERM_CD
+	               , SUBJECT_CD
+	               , SUBJECT_DIV_CD
+		           , CLASS_CD
+	               , PROF_NO
+	               , CLASSDAY
+	               , CLASSHOUR_START_TIME
+	               , CLASSHOUR_END_TIME
+	               , CLASS_PROG_CD
+	               , CERT_TYPE
+	               , ATTENDEE_CNT
+	               , ATTEND_PRESENT_CNT
+	               , ATTEND_LATE_CNT
+	               , ATTEND_ABSENT_CNT
+	               , ATTEND_OFF_CNT + ATTEND_QUIT_CNT AS ETC_CNT
+	               , CLASS_STS_CD
+	            FROM CHUL_TB_ATTENDMASTER_ADDINFO
+	           WHERE 1=1
+		         AND YEAR = #{year}
+		         AND TERM_CD = #{term_cd}
+	           <if test="!searchValue2.equals('')">
+	              AND SUBJECT_CD = #{searchValue2}
+	           </if>
+	           <if test="!searchValue3.equals('')">
+	              AND SUBJECT_DIV_CD = #{searchValue3}
+	           </if>
+	           <if test="!searchValue4.equals('')">
+	              AND PROF_NO = #{searchValue4}
+	           </if>
+	           )
+	</select>
+
+	<select id="getAdminStandDetailAddinfo" parameterType="map" resultType="hashmap">
+		SELECT A.*
+			 , CASE WHEN A.CERT_TYPE <![CDATA[ > ]]> ' ' AND A.CERT_TYPE <![CDATA[ <> ]]> 'CERT_NUM' THEN B.REG_DATE
+				    ELSE A.CLASS_CERT_ISSUE_TIME
+			   END AS CLASS_CERT_ISSUE_TIME_NEW
+			 , CASE WHEN B.IPADDR = 'batch_server' THEN ''
+			        WHEN B.IPADDR = 'COPY_ATTENDHIST' THEN '이전강의복사처리'
+					ELSE B.IPADDR
+			   END IPADDR
+		     , D.CODE_NAME AS CLASS_STS_NM
+		     , E.CODE_NAME AS CLASS_PROG_NM
+		  FROM (
+		        SELECT A.*
+		             , ROWNUM AS RNUM
+		          FROM (
+				       SELECT M.UNIV_CD
+			                , M.YEAR
+			                , M.TERM_CD
+			                , M.SUBJECT_CD
+			                , M.SUBJECT_DIV_CD
+			                , M.CLASS_CD
+			                , M.PROF_NO
+		                    , TO_CHAR(M.CLASSDAY, 'YYYY-MM-DD') AS CLASSDAY
+		                    , M.CLASSHOUR_START_TIME
+		                    , M.CLASSHOUR_END_TIME
+		                    , M.CLASS_PROG_CD
+		                    , M.CERT_TYPE
+							, CASE WHEN M.CERT_TYPE = 'PROF_AUTH' THEN '교수호명방식'
+								   WHEN M.CERT_TYPE = 'CERT_NUM' THEN '인증번호방식'
+								   WHEN M.CERT_TYPE = 'BLUETOOTH_AUTH' THEN '블루투스방식'
+							  END AS CERT_TYPE_NM
+							, M.CLASS_CERT_ISSUE_TIME
+		                    , M.ATTENDEE_CNT
+		                    , M.ATTEND_PRESENT_CNT
+		                    , M.ATTEND_LATE_CNT
+		                    , M.ATTEND_ABSENT_CNT
+		                    , M.ATTEND_OFF_CNT + M.ATTEND_QUIT_CNT AS ETC_CNT
+		                    , M.CLASS_STS_CD
+							, M.CLASS_TYPE_CD
+							, CASE WHEN M.CLASS_TYPE_CD = 'G019C001' THEN '정상'
+								   WHEN M.CLASS_TYPE_CD = 'G019C002' THEN '휴강'
+								   WHEN M.CLASS_TYPE_CD = 'G019C003' THEN '보강'
+							  END AS CLASS_TYPE_CD_NM
+		                 FROM CHUL_TB_ATTENDMASTER_ADDINFO M
+		                WHERE M.YEAR = #{year}
+				          AND M.TERM_CD = #{term_cd}
+		                <if test="!searchValue2.equals('')">
+		                   AND M.SUBJECT_CD = #{searchValue2}
+		                </if>
+		                <if test="!searchValue3.equals('')">
+		                   AND M.SUBJECT_DIV_CD = #{searchValue3}
+		                </if>
+		                <if test="!searchValue4.equals('')">
+		                   AND M.PROF_NO = #{searchValue4}
+		                </if>
+		                ORDER BY M.CLASSDAY
+		                ) A
+		        ) A
+		  INNER JOIN (
+						SELECT *
+						  FROM (
+									SELECT UNIV_CD
+										 , YEAR
+										 , TERM_CD
+										 , SUBJECT_CD
+										 , SUBJECT_DIV_CD
+										 , CLASS_CD
+										 , CLASSDAY
+										 , PROF_NO
+										 , CLASSHOUR_START_TIME
+										 , CLASSHOUR_END_TIME
+										 , CLASS_TYPE_CD
+										 , STUDENT_NO
+										 , REG_DATE
+										 , IPADDR
+										 , RANK() OVER(PARTITION BY UNIV_CD
+																  , YEAR
+																  , TERM_CD
+																  , SUBJECT_CD
+																  , SUBJECT_DIV_CD
+																  , CLASS_CD
+																  , CLASSDAY
+																  , PROF_NO
+																  , CLASSHOUR_START_TIME
+																  , CLASSHOUR_END_TIME
+																  , CLASS_TYPE_CD ORDER BY REG_DATE, STUDENT_NO) AS NUM
+									  FROM CHUL_TB_ATTENDDETHIST
+									 WHERE YEAR = #{year}
+									   AND TERM_CD = #{term_cd}
+
+					                <if test="!searchValue2.equals('')">
+					                   AND SUBJECT_CD = #{searchValue2}
+					                </if>
+					                <if test="!searchValue3.equals('')">
+					                   AND SUBJECT_DIV_CD = #{searchValue3}
+					                </if>
+					                <if test="!searchValue4.equals('')">
+					                   AND PROF_NO = #{searchValue4}
+					                </if>
+
+								  ) A
+						WHERE A.NUM = 1
+		             ) B
+		     ON A.UNIV_CD = B.UNIV_CD
+			AND A.YEAR = B.YEAR
+			AND A.TERM_CD = B.TERM_CD
+			AND A.SUBJECT_CD = B.SUBJECT_CD
+			AND A.SUBJECT_DIV_CD = B.SUBJECT_DIV_CD
+			AND A.CLASS_CD = B.CLASS_CD
+			AND A.CLASSDAY = B.CLASSDAY
+			AND A.PROF_NO = B.PROF_NO
+			AND A.CLASSHOUR_START_TIME = B.CLASSHOUR_START_TIME
+			AND A.CLASSHOUR_END_TIME = B.CLASSHOUR_END_TIME
+			AND A.CLASS_TYPE_CD = B.CLASS_TYPE_CD
+		   LEFT OUTER JOIN CHUL_TB_CODEMASTER D
+		     ON A.CLASS_STS_CD = D.CODE
+		   LEFT OUTER JOIN CHUL_TB_CODEMASTER E
+		     ON A.CLASS_PROG_CD = E.CODE
+		  WHERE RNUM BETWEEN #{startRow} AND #{endRow}
+		  ORDER BY A.CLASSDAY
+		  		 , A.CLASSHOUR_START_TIME
+	</select>
+
+	<select id="getAdminStandAttendeeCount" parameterType="map" resultType="int">
+	   SELECT COUNT(*) AS CNT
+	     FROM (
+				SELECT UNIV_CD
+	                 , YEAR
+	                 , TERM_CD
+	                 , SUBJECT_CD
+	                 , SUBJECT_DIV_CD
+		             , CLASS_CD
+	                 , PROF_NO
+	                 , CLASSDAY
+	                 , CLASSHOUR_START_TIME
+	                 , CLASSHOUR_END_TIME
+	                 , CLASS_STS_CD
+	                 , CLASS_PROG_CD
+	                 , CERT_TYPE
+	                 , ATTENDEE_CNT
+	                 , ATTEND_PRESENT_CNT
+	                 , ATTEND_LATE_CNT
+	                 , ATTEND_ABSENT_CNT
+	                 , ATTEND_OFF_CNT + ATTEND_QUIT_CNT AS ETC_CNT
+	                 , CLASS_NAME
+	              FROM CHUL_TB_ATTENDMASTER_ADDINFO
+	             WHERE 1=1
+			       AND YEAR = #{year}
+			       AND TERM_CD = #{term_cd}
+	             <if test="!searchValue2.equals('')">
+	                AND (PROF_NO LIKE #{searchValue2} || '%' OR PROF_NAME LIKE #{searchValue2} || '%')
+	             </if>
+	             <if test="!searchValue3.equals('')">
+	                AND CLASS_NAME LIKE #{searchValue3} || '%'
+	             </if>
+	           )
+	</select>
+
+	<select id="getAdminStandAttendee" parameterType="map" resultType="hashmap">
+	SELECT A.*
+	     , D.CODE_NAME AS CLASS_STS_NM
+	     , E.CODE_NAME AS CLASS_PROG_NM
+	  FROM (
+	        SELECT A.*
+	             , ROWNUM AS RNUM
+	          FROM (
+				   SELECT UNIV_CD
+		                , YEAR
+		                , TERM_CD
+		                , SUBJECT_CD
+		                , SUBJECT_DIV_CD
+			            , CLASS_CD
+		                , PROF_NO
+	                    , TO_CHAR(CLASSDAY, 'YYYY-MM-DD') AS CLASSDAY
+	                    , CLASSHOUR_START_TIME
+	                    , CLASSHOUR_END_TIME
+	                    , CLASS_STS_CD
+	                    , CLASS_PROG_CD
+	                    , CERT_TYPE
+	                    , ATTENDEE_CNT
+	                    , ATTEND_PRESENT_CNT
+	                    , ATTEND_LATE_CNT
+	                    , ATTEND_ABSENT_CNT
+	                    , ATTEND_OFF_CNT + ATTEND_QUIT_CNT AS ETC_CNT
+	                    , CLASS_NAME
+	                    , PROF_NAME
+	                 FROM CHUL_TB_ATTENDMASTER_ADDINFO
+	                WHERE 1=1
+			         AND YEAR = #{year}
+			         AND TERM_CD = #{term_cd}
+	                <if test="!searchValue2.equals('')">
+	                   AND (PROF_NO LIKE #{searchValue2} || '%' OR PROF_NAME LIKE #{searchValue2} || '%')
+	                </if>
+	                <if test="!searchValue3.equals('')">
+	                   AND CLASS_NAME LIKE #{searchValue3} || '%'
+	                </if>
+	                ORDER BY SUBJECT_CD, SUBJECT_DIV_CD, PROF_NO, CLASSDAY
+	                ) A
+	        ) A
+	   LEFT OUTER JOIN CHUL_TB_CODEMASTER D
+	     ON A.CLASS_STS_CD = D.CODE
+	   LEFT OUTER JOIN CHUL_TB_CODEMASTER E
+	     ON A.CLASS_PROG_CD = E.CODE
+	  WHERE RNUM BETWEEN #{startRow} AND #{endRow}
+	</select>
+
+	<select id="getAdminStandDetailAttendeeCount" parameterType="map" resultType="int">
+	   SELECT COUNT(*) AS CNT
+	     FROM (
+			    SELECT A.UNIV_CD
+	                 , A.YEAR
+	                 , A.TERM_CD
+	                 , A.SUBJECT_CD
+				     , A.SUBJECT_DIV_CD
+				     , A.STUDENT_NO
+				     , B.STUDENT_NAME
+				     , B.DEPT_NAME
+				     , B.HP_NO
+				     , B.EMAIL_ADDR
+				     , B.STUDENT_NATION
+				     , B.STUDENT_STS_CD
+				  FROM UNIV_TB_ATTENDEE A
+				 INNER JOIN UNIV_TB_STUDENT B
+				    ON A.STUDENT_NO = B.STUDENT_NO
+				 WHERE 1=1
+		           AND A.YEAR = #{year}
+		           AND A.TERM_CD = #{term_cd}
+				    <if test="!searchValue2.equals('')">
+				       AND A.SUBJECT_CD = #{searchValue2}
+				    </if>
+				    <if test="!searchValue3.equals('')">
+				       AND A.SUBJECT_DIV_CD = #{searchValue3}
+				    </if>
+	           )
+	</select>
+
+	<select id="getAdminStandDetailAttendee" parameterType="map" resultType="hashmap">
+	SELECT A.*
+	     , D.CODE_NAME AS STUDENT_STS_NM
+	  FROM (
+	        SELECT A.*
+	             , ROWNUM AS RNUM
+	          FROM (
+				    SELECT A.UNIV_CD
+		                 , A.YEAR
+		                 , A.TERM_CD
+		                 , A.SUBJECT_CD
+					     , A.SUBJECT_DIV_CD
+					     , A.STUDENT_NO
+					     , B.STUDENT_NAME
+					     , B.DEPT_NAME
+					     , B.HP_NO
+					     , B.EMAIL_ADDR
+					     , B.STUDENT_NATION
+					     , B.STUDENT_STS_CD
+					  FROM UNIV_TB_ATTENDEE A
+					 INNER JOIN UNIV_TB_STUDENT B
+					    ON A.STUDENT_NO = B.STUDENT_NO
+					 WHERE 1=1
+			          AND A.YEAR = #{year}
+			          AND A.TERM_CD = #{term_cd}
+					    <if test="!searchValue2.equals('')">
+					       AND A.SUBJECT_CD = #{searchValue2}
+					    </if>
+					    <if test="!searchValue3.equals('')">
+					       AND A.SUBJECT_DIV_CD = #{searchValue3}
+					    </if>
+	                ORDER BY A.STUDENT_NO
+	                ) A
+	        ) A
+	   LEFT OUTER JOIN CHUL_TB_CODEMASTER D
+	     ON A.STUDENT_STS_CD = D.CODE
+	  WHERE RNUM BETWEEN #{startRow} AND #{endRow}
+	</select>
+
+	<select id="getAdminStandTargetViewChkCount" parameterType="map" resultType="int">
+		SELECT COUNT(*) AS CNT
+		  FROM (
+				SELECT COUNT(*) AS CNT
+				  FROM V_UNIV_VW_DEPT
+				 WHERE UNIV_CD = #{univ_cd }
+				   AND YEAR = #{year }
+				   AND TERM_CD = #{term_cd }
+				   AND (COLL_CD IS NULL
+					   OR DEPT_CD IS NULL
+					   OR DEPT_NAME IS NULL)
+				 UNION
+				SELECT COUNT(*) AS CNT
+				  FROM V_UNIV_VW_CLASSHOUR
+				 WHERE UNIV_CD = #{univ_cd }
+				   AND YEAR = #{year }
+				   AND TERM_CD = #{term_cd }
+				   AND (CLASSHOUR_START_TIME IS NULL
+				   	   OR CLASSHOUR_END_TIME IS NULL)
+
+				<if test="!univ_cd.equals('KDU00001')">
+				 UNION
+				SELECT COUNT(*) AS CNT
+				  FROM V_UNIV_VW_CLASSROOM
+				 WHERE UNIV_CD = #{univ_cd }
+				   AND YEAR = #{year }
+				   AND TERM_CD = #{term_cd }
+				   AND (CLASSROOM_NO IS NULL
+				   	   OR CLASSROOM_NAME IS NULL)
+				</if>
+				
+				 UNION
+				SELECT COUNT(*) AS CNT
+				  FROM V_UNIV_VW_SUBJECT
+
+				<choose>
+					<when test="univ_cd.equals('G001C002')">
+						 WHERE (UNIV_CD + YEAR + TERM_CD) IN (#{targetParam })
+					</when>
+					<otherwise>
+						 WHERE UNIV_CD = #{univ_cd }
+						   AND YEAR = #{year }
+						   AND TERM_CD = #{term_cd }
+					</otherwise>
+				</choose>
+
+				   AND (SUBJECT_CD IS NULL
+				   	   OR SUBJECT_DIV_CD IS NULL
+				   	   OR SUBJECT_NAME IS NULL)
+
+				<if test="!univ_cd.equals('53028000')">
+					 UNION
+					SELECT COUNT(*) AS CNT
+					  FROM V_UNIV_VW_ATTENDEE
+					 WHERE UNIV_CD = #{univ_cd }
+					   AND YEAR = #{year }
+					   AND TERM_CD = #{term_cd }
+					   AND (SUBJECT_CD IS NULL
+					   	   OR SUBJECT_DIV_CD IS NULL
+					   	   OR STUDENT_NO IS NULL)
+				</if>
+
+				 UNION
+
+				SELECT COUNT(*) AS CNT
+				  FROM V_UNIV_VW_CLASS
+
+				<choose>
+					<when test="univ_cd.equals('G001C002')">
+						 WHERE (UNIV_CD + YEAR + TERM_CD) IN (#{targetParam })
+					</when>
+					<otherwise>
+						 WHERE UNIV_CD = #{univ_cd }
+						   AND YEAR = #{year }
+						   AND TERM_CD = #{term_cd }
+					</otherwise>
+				</choose>
+
+				   AND (SUBJECT_CD IS NULL
+				   	   OR SUBJECT_DIV_CD IS NULL
+				   	   OR PROF_NO IS NULL
+				   	   OR CLASSHOUR_START_TIME IS NULL
+				   	   OR CLASSHOUR_END_TIME IS NULL
+				   	   OR CLASSROOM_NO IS NULL)
+		       ) A
+	</select>
+
+	<select id="getAdminStandTargetViewChk" parameterType="map" resultType="hashmap">
+		SELECT S.YEAR
+		     , S.TERM_CD
+		     , S.TERM_NAME AS TERM_NM
+		     , A.TBL
+		     , A.TBL_NM
+		     , A.CNT
+		  FROM (
+				SELECT 'V_UNIV_VW_DEPT' AS TBL
+					 , '학과정보' AS TBL_NM
+					 , COUNT(*) AS CNT
+				  FROM V_UNIV_VW_DEPT M
+				 WHERE UNIV_CD = #{univ_cd }
+				   AND YEAR = #{year }
+				   AND TERM_CD = #{term_cd }
+				   AND (COLL_CD IS NULL
+					   OR DEPT_CD IS NULL
+					   OR DEPT_NAME IS NULL)
+				 UNION
+				SELECT 'V_UNIV_VW_CLASSHOUR' AS TBL
+					 , '시간표정보' AS TBL_NM
+					 , COUNT(*) AS CNT
+				  FROM V_UNIV_VW_CLASSHOUR
+				 WHERE UNIV_CD = #{univ_cd }
+				   AND YEAR = #{year }
+				   AND TERM_CD = #{term_cd }
+				   AND (CLASSHOUR_START_TIME IS NULL
+				   	   OR CLASSHOUR_END_TIME IS NULL)
+				   	   
+				<if test="!univ_cd.equals('KDU00001')">
+				 UNION
+				SELECT 'V_UNIV_VW_CLASSROOM' AS TBL
+					 , '강의실정보' AS TBL_NM
+					 , COUNT(*) AS CNT
+				  FROM V_UNIV_VW_CLASSROOM
+				 WHERE UNIV_CD = #{univ_cd }
+				   AND YEAR = #{year }
+				   AND TERM_CD = #{term_cd }
+				   AND (CLASSROOM_NO IS NULL
+				   	   OR CLASSROOM_NAME IS NULL)
+				</if>
+				
+				 UNION
+				SELECT 'V_UNIV_VW_SUBJECT' AS TBL
+					 , '과목정보' AS TBL_NM
+					 , COUNT(*) AS CNT
+				  FROM V_UNIV_VW_SUBJECT
+
+				<choose>
+					<when test="univ_cd.equals('G001C002')">
+						 WHERE (UNIV_CD + YEAR + TERM_CD) IN (#{targetParam })
+					</when>
+					<otherwise>
+						 WHERE UNIV_CD = #{univ_cd }
+						   AND YEAR = #{year }
+						   AND TERM_CD = #{term_cd }
+					</otherwise>
+				</choose>
+
+				   AND (SUBJECT_CD IS NULL
+				   	   OR SUBJECT_DIV_CD IS NULL
+				   	   OR SUBJECT_NAME IS NULL)
+
+				<if test="!univ_cd.equals('53028000')">
+					 UNION
+					SELECT 'V_UNIV_VW_ATTENDEE' AS TBL
+						 , '수강생정보' AS TBL_NM
+						 , COUNT(*) AS CNT
+					  FROM V_UNIV_VW_ATTENDEE
+					 WHERE UNIV_CD = #{univ_cd }
+					   AND YEAR = #{year }
+					   AND TERM_CD = #{term_cd }
+					   AND (SUBJECT_CD IS NULL
+					   	   OR SUBJECT_DIV_CD IS NULL
+					   	   OR STUDENT_NO IS NULL)
+				</if>
+
+				 UNION
+				SELECT 'V_UNIV_VW_CLASS' AS TBL
+					 , '강의정보' AS TBL_NM
+					 , COUNT(*) AS CNT
+				  FROM V_UNIV_VW_CLASS
+
+				<choose>
+					<when test="univ_cd.equals('G001C002')">
+						 WHERE (UNIV_CD + YEAR + TERM_CD) IN (#{targetParam })
+					</when>
+					<otherwise>
+						 WHERE UNIV_CD = #{univ_cd }
+						   AND YEAR = #{year }
+						   AND TERM_CD = #{term_cd }
+					</otherwise>
+				</choose>
+
+				   AND (SUBJECT_CD IS NULL
+				   	   OR SUBJECT_DIV_CD IS NULL
+				   	   OR PROF_NO IS NULL
+				   	   OR CLASSHOUR_START_TIME IS NULL
+				   	   OR CLASSHOUR_END_TIME IS NULL
+				   	   OR CLASSROOM_NO IS NULL)
+		       ) A
+		 INNER JOIN CHUL_TB_UNIV S
+		    ON S.UNIV_STS_CD = 'G004C001'
+		 ORDER BY TBL_NM
+	</select>
+
+	<select id="getAdminStandTargetViewSelectCount" parameterType="map" resultType="int">
+		SELECT COUNT(*)
+		  FROM ${tbl }
+
+		<choose>
+			<when test="univ_cd.equals('G001C002')">
+				 WHERE (UNIV_CD + YEAR + TERM_CD) IN (#{targetParam })
+			</when>
+			<otherwise>
+				 WHERE UNIV_CD = #{univ_cd }
+				   AND YEAR = #{year }
+				   AND TERM_CD = #{term_cd }
+			</otherwise>
+		</choose>
+
+		<choose>
+			<when test="tbl.equals('V_UNIV_VW_COLL')">
+			 	AND (COLL_CD IS NULL
+			 		OR COLL_NAME IS NULL)
+			</when>
+			<when test="tbl.equals('V_UNIV_VW_DEPT')">
+				AND (COLL_CD IS NULL
+			 		OR DEPT_CD IS NULL
+			 		OR DEPT_NAME IS NULL)
+			</when>
+			<when test="tbl.equals('V_UNIV_VW_CLASSHOUR')">
+				AND (CLASSHOUR_START_TIME IS NULL
+			 		OR CLASSHOUR_END_TIME IS NULL)
+			</when>
+			<when test="tbl.equals('V_UNIV_VW_CLASSROOM')">
+				AND (CLASSROOM_NO IS NULL
+			 		OR CLASSROOM_NAME IS NULL)
+			</when>
+			<when test="tbl.equals('V_UNIV_VW_SUBJECT')">
+				AND (SUBJECT_CD IS NULL
+			 		OR SUBJECT_DIV_CD IS NULL
+			 		OR SUBJECT_NAME IS NULL)
+			</when>
+			<when test="tbl.equals('V_UNIV_VW_ATTENDEE')">
+				<if test="!univ_cd.equals('53028000')">
+					AND (SUBJECT_CD IS NULL
+				 		OR SUBJECT_DIV_CD IS NULL
+				 		OR STUDENT_NO IS NULL)
+				</if>
+			</when>
+			<when test="tbl.equals('V_UNIV_VW_CLASS')">
+				AND (SUBJECT_CD IS NULL
+			 		OR SUBJECT_DIV_CD IS NULL
+			 		OR PROF_NO IS NULL
+			 		OR CLASSHOUR_START_TIME IS NULL
+			 		OR CLASSHOUR_END_TIME IS NULL
+			 		OR CLASSROOM_NO IS NULL)
+			</when>
+		</choose>
+	</select>
+
+	<select id="getAdminStandTargetViewSelect" parameterType="map" resultType="hashmap">
+		SELECT A.*
+
+		<choose>
+			<when test="univ_cd.equals('G001C002')">
+				, #{term_name } AS TERM_NM
+			</when>
+			<otherwise>
+				, #{term_name } AS TERM_NM
+			</otherwise>
+		</choose>
+
+		  FROM ${tbl } A
+
+		<choose>
+			<when test="univ_cd.equals('G001C002')">
+				 WHERE (UNIV_CD + YEAR + TERM_CD) IN (#{targetParam })
+			</when>
+			<otherwise>
+				 WHERE UNIV_CD = #{univ_cd }
+				   AND YEAR = #{year }
+				   AND TERM_CD = #{term_cd }
+			</otherwise>
+		</choose>
+
+		<choose>
+			<when test="tbl.equals('V_UNIV_VW_COLL')">
+			 	AND (COLL_CD IS NULL
+			 		OR COLL_NAME IS NULL)
+			</when>
+			<when test="tbl.equals('V_UNIV_VW_DEPT')">
+				AND (COLL_CD IS NULL
+			 		OR DEPT_CD IS NULL
+			 		OR DEPT_NAME IS NULL)
+			</when>
+			<when test="tbl.equals('V_UNIV_VW_CLASSHOUR')">
+				AND (CLASSHOUR_START_TIME IS NULL
+			 		OR CLASSHOUR_END_TIME IS NULL)
+			</when>
+			<when test="tbl.equals('V_UNIV_VW_CLASSROOM')">
+				AND (CLASSROOM_NO IS NULL
+			 		OR CLASSROOM_NAME IS NULL)
+			</when>
+			<when test="tbl.equals('V_UNIV_VW_SUBJECT')">
+				AND (SUBJECT_CD IS NULL
+			 		OR SUBJECT_DIV_CD IS NULL
+			 		OR SUBJECT_NAME IS NULL)
+			</when>
+			<when test="tbl.equals('V_UNIV_VW_ATTENDEE')">
+				<if test="!univ_cd.equals('53028000')">
+					AND (SUBJECT_CD IS NULL
+				 		OR SUBJECT_DIV_CD IS NULL
+				 		OR STUDENT_NO IS NULL)
+				</if>
+			</when>
+			<when test="tbl.equals('V_UNIV_VW_CLASS')">
+				AND (SUBJECT_CD IS NULL
+			 		OR SUBJECT_DIV_CD IS NULL
+			 		OR PROF_NO IS NULL
+			 		OR CLASSHOUR_START_TIME IS NULL
+			 		OR CLASSHOUR_END_TIME IS NULL
+			 		OR CLASSROOM_NO IS NULL)
+			</when>
+		</choose>
+	</select>
+
+	<select id="getAdminStandTargetViewCount" parameterType="map" resultType="int">
+		SELECT COUNT(*) AS CNT
+		  FROM (
+
+				<if test="!univ_cd.equals('53028000')">
+					SELECT COUNT(*) AS CNT
+					  FROM V_UNIV_VW_ATTENDEE
+					 WHERE UNIV_CD = #{univ_cd }
+					   AND YEAR = #{year }
+					   AND TERM_CD = #{term_cd }
+					 UNION
+				</if>
+
+				SELECT COUNT(*) AS CNT
+				  FROM V_UNIV_VW_CLASS
+
+				<choose>
+					<when test="univ_cd.equals('G001C002')">
+						 WHERE (UNIV_CD + YEAR + TERM_CD) IN (#{targetParam })
+					</when>
+					<otherwise>
+						 WHERE UNIV_CD = #{univ_cd }
+						   AND YEAR = #{year }
+						   AND TERM_CD = #{term_cd }
+					</otherwise>
+				</choose>
+
+				 UNION
+			    SELECT COUNT(*) AS CNT
+				  FROM V_UNIV_VW_CLASSHOUR
+				 WHERE UNIV_CD = #{univ_cd }
+				   AND YEAR = #{year }
+				   AND TERM_CD = #{term_cd }
+				   
+				<if test="!univ_cd.equals('KDU00001')">
+				 UNION
+				SELECT COUNT(*) AS CNT
+				  FROM V_UNIV_VW_CLASSROOM
+				 WHERE UNIV_CD = #{univ_cd }
+				   AND YEAR = #{year }
+				   AND TERM_CD = #{term_cd }
+				</if>
+
+				 UNION
+				SELECT COUNT(*) AS CNT
+				  FROM V_UNIV_VW_DEPT
+				 WHERE UNIV_CD = #{univ_cd }
+				   AND YEAR = #{year }
+				   AND TERM_CD = #{term_cd }
+				 UNION
+				SELECT COUNT(*) AS CNT
+				  FROM V_UNIV_VW_SUBJECT
+
+				<choose>
+					<when test="univ_cd.equals('G001C002')">
+						 WHERE (UNIV_CD + YEAR + TERM_CD) IN (#{targetParam })
+					</when>
+					<otherwise>
+						 WHERE UNIV_CD = #{univ_cd }
+						   AND YEAR = #{year }
+						   AND TERM_CD = #{term_cd }
+					</otherwise>
+				</choose>
+
+		       ) A
+	</select>
+
+	<select id="getAdminStandTargetView" parameterType="map" resultType="hashmap">
+		SELECT S.YEAR
+		     , S.TERM_CD
+		     , S.TERM_NAME AS TERM_NM
+		     , A.TBL
+		     , A.TBL_NM
+		     , A.CNT
+		  FROM (
+
+				<if test="!univ_cd.equals('53028000')">
+					SELECT 'V_UNIV_VW_ATTENDEE' AS TBL
+						 , '수강신청정보' AS TBL_NM
+						 , COUNT(*) AS CNT
+					  FROM V_UNIV_VW_ATTENDEE
+					 WHERE UNIV_CD = #{univ_cd }
+					   AND YEAR = #{year }
+					   AND TERM_CD = #{term_cd }
+					 UNION
+				</if>
+
+				SELECT 'V_UNIV_VW_CLASS' AS TBL
+					 , '강의정보' AS TBL_NM
+					 , COUNT(*) AS CNT
+				  FROM V_UNIV_VW_CLASS
+
+				<choose>
+					<when test="univ_cd.equals('G001C002')">
+						 WHERE (UNIV_CD + YEAR + TERM_CD) IN (#{targetParam })
+					</when>
+					<otherwise>
+						 WHERE UNIV_CD = #{univ_cd }
+						   AND YEAR = #{year }
+						   AND TERM_CD = #{term_cd }
+					</otherwise>
+				</choose>
+
+				 UNION
+			    SELECT 'V_UNIV_VW_CLASSHOUR' AS TBL
+				     , '강의시간정보' AS TBL_NM
+					 , COUNT(*) AS CNT
+				  FROM V_UNIV_VW_CLASSHOUR
+				 WHERE UNIV_CD = #{univ_cd }
+				   AND YEAR = #{year }
+				   AND TERM_CD = #{term_cd }
+				   
+				<if test="!univ_cd.equals('KDU00001')">
+				 UNION
+				SELECT 'V_UNIV_VW_CLASSROOM' AS TBL
+				     , '강의실정보' AS TBL_NM
+					 , COUNT(*) AS CNT
+				  FROM V_UNIV_VW_CLASSROOM
+				 WHERE UNIV_CD = #{univ_cd }
+				   AND YEAR = #{year }
+				   AND TERM_CD = #{term_cd }
+				</if>
+
+				 UNION
+				SELECT 'V_UNIV_VW_DEPT' AS TBL
+					 , '학과정보' AS TBL_NM
+					 , COUNT(*) AS CNT
+				  FROM V_UNIV_VW_DEPT
+				 WHERE UNIV_CD = #{univ_cd }
+				   AND YEAR = #{year }
+				   AND TERM_CD = #{term_cd }
+				 UNION
+				SELECT 'V_UNIV_VW_SUBJECT' AS TBL
+					 , '과목정보' AS TBL_NM
+					 , COUNT(*) AS CNT
+				  FROM V_UNIV_VW_SUBJECT
+
+				<choose>
+					<when test="univ_cd.equals('G001C002')">
+						 WHERE (UNIV_CD + YEAR + TERM_CD) IN (#{targetParam })
+					</when>
+					<otherwise>
+						 WHERE UNIV_CD = #{univ_cd }
+						   AND YEAR = #{year }
+						   AND TERM_CD = #{term_cd }
+					</otherwise>
+				</choose>
+		       ) A
+		 INNER JOIN CHUL_TB_UNIV S
+		    ON S.UNIV_STS_CD = 'G004C001'
+		 ORDER BY TBL_NM
+	</select>
+
+	<select id="getAdminStandCopyDataCount" parameterType="map" resultType="int">
+		SELECT COUNT(*) CNT
+		  FROM (
+
+		  		<if test="!univ_cd.equals('53028000')">
+					SELECT COUNT(*) AS CNT
+					  FROM CHUL_TB_ATTENDEE M
+					 INNER JOIN CHUL_TB_UNIV S
+						ON M.UNIV_CD = S.UNIV_CD
+					   AND M.YEAR = S.YEAR
+					   AND M.TERM_CD = S.TERM_CD
+					 WHERE S.UNIV_STS_CD = 'G004C001'
+					 UNION
+		  		</if>
+
+				SELECT COUNT(*) AS CNT
+				  FROM CHUL_TB_CLASSHOUR M
+				 INNER JOIN CHUL_TB_UNIV S
+					ON M.UNIV_CD = S.UNIV_CD
+				   AND M.YEAR = S.YEAR
+				   AND M.TERM_CD = S.TERM_CD
+				 WHERE S.UNIV_STS_CD = 'G004C001'
+				 UNION
+				SELECT COUNT(*) AS CNT
+				  FROM CHUL_TB_DEPT M
+				 INNER JOIN CHUL_TB_UNIV S
+					ON M.UNIV_CD = S.UNIV_CD
+				   AND M.YEAR = S.YEAR
+				   AND M.TERM_CD = S.TERM_CD
+				 WHERE S.UNIV_STS_CD = 'G004C001'
+				 UNION
+				SELECT COUNT(*) AS CNT
+				  FROM CHUL_TB_SUBJECT M
+				 INNER JOIN CHUL_TB_UNIV S
+					ON M.UNIV_CD = S.UNIV_CD
+				   AND M.YEAR = S.YEAR
+				   AND M.TERM_CD = S.TERM_CD
+				 WHERE S.UNIV_STS_CD = 'G004C001'
+		       ) A
+	</select>
+
+	<select id="getAdminStandCopyData" parameterType="map" resultType="hashmap">
+		SELECT A.TBL
+		     , A.TBL_NM
+		     , A.CNT
+		  FROM (
+
+		  		<if test="!univ_cd.equals('53028000')">
+					SELECT 'CHUL_TB_ATTENDEE' AS TBL
+						 , '수강신청정보' AS TBL_NM
+					     , COUNT(*) AS CNT
+					  FROM CHUL_TB_ATTENDEE M
+					 INNER JOIN CHUL_TB_UNIV S
+						ON M.UNIV_CD = S.UNIV_CD
+					   AND M.YEAR = S.YEAR
+					   AND M.TERM_CD = S.TERM_CD
+					 WHERE S.UNIV_STS_CD = 'G004C001'
+					 UNION
+		  		</if>
+
+				SELECT 'CHUL_TB_CLASSHOUR' AS TBL
+					 , '강의시간정보' AS TBL_NM
+					 , COUNT(*) AS CNT
+				  FROM CHUL_TB_CLASSHOUR M
+				 INNER JOIN CHUL_TB_UNIV S
+					ON M.UNIV_CD = S.UNIV_CD
+				   AND M.YEAR = S.YEAR
+				   AND M.TERM_CD = S.TERM_CD
+				 WHERE S.UNIV_STS_CD = 'G004C001'
+				 UNION
+				SELECT 'CHUL_TB_DEPT' AS TBL
+					 , '학과정보' AS TBL_NM
+				     , COUNT(*) AS CNT
+				  FROM CHUL_TB_DEPT M
+				 INNER JOIN CHUL_TB_UNIV S
+					ON M.UNIV_CD = S.UNIV_CD
+				   AND M.YEAR = S.YEAR
+				   AND M.TERM_CD = S.TERM_CD
+				 WHERE S.UNIV_STS_CD = 'G004C001'
+				 UNION
+				SELECT 'CHUL_TB_SUBJECT' AS TBL
+					 , '과목정보' AS TBL_NM
+				     , COUNT(*) AS CNT
+				  FROM CHUL_TB_SUBJECT M
+				 INNER JOIN CHUL_TB_UNIV S
+					ON M.UNIV_CD = S.UNIV_CD
+				   AND M.YEAR = S.YEAR
+				   AND M.TERM_CD = S.TERM_CD
+				 WHERE S.UNIV_STS_CD = 'G004C001'
+		       ) A
+		 INNER JOIN CHUL_TB_UNIV S
+		    ON S.UNIV_STS_CD = 'G004C001'
+		 ORDER BY TBL_NM
+	</select>
+
+	<select id="getAdminStandSyncDataCount" parameterType="map" resultType="int">
+		SELECT COUNT(*) CNT
+		  FROM (
+				SELECT COUNT(*) AS CNT
+				  FROM CHUL_TB_ATTENDMASTER_ADDINFO M
+				 INNER JOIN CHUL_TB_UNIV S
+					ON M.UNIV_CD = S.UNIV_CD
+				   AND M.YEAR = S.YEAR
+				   AND M.TERM_CD = S.TERM_CD
+				 WHERE S.UNIV_STS_CD = 'G004C001'
+				 UNION
+				SELECT COUNT(*) AS CNT
+				  FROM CHUL_TB_ATTENDDETHIST M
+				 INNER JOIN CHUL_TB_UNIV S
+					ON M.UNIV_CD = S.UNIV_CD
+				   AND M.YEAR = S.YEAR
+				   AND M.TERM_CD = S.TERM_CD
+				 WHERE S.UNIV_STS_CD = 'G004C001'
+				 UNION
+				SELECT COUNT(*) AS CNT
+				  FROM CHUL_TB_CLASSOFFMANAGE M
+				 INNER JOIN CHUL_TB_UNIV S
+					ON M.UNIV_CD = S.UNIV_CD
+				   AND M.YEAR = S.YEAR
+				   AND M.TERM_CD = S.TERM_CD
+				 WHERE S.UNIV_STS_CD = 'G004C001'
+				 UNION
+				SELECT COUNT(*) AS CNT
+				  FROM CHUL_TB_CLASSOFF_REQUEST M
+				 INNER JOIN CHUL_TB_UNIV S
+					ON M.UNIV_CD = S.UNIV_CD
+				   AND M.YEAR = S.YEAR
+				   AND M.TERM_CD = S.TERM_CD
+				 WHERE S.UNIV_STS_CD = 'G004C001'
+
+				<if test='univ_cd.equals("G001C9991")'>
+				 UNION
+				SELECT COUNT(*) AS CNT
+				  FROM CHUL_TB_CLASSROOM_RESERVE M
+				 INNER JOIN CHUL_TB_UNIV S
+					ON M.UNIV_CD = S.UNIV_CD
+				   AND M.YEAR = S.YEAR
+				   AND M.TERM_CD = S.TERM_CD
+				 WHERE S.UNIV_STS_CD = 'G004C001'
+				</if>
+
+		       ) A
+	</select>
+
+	<select id="getAdminStandSyncData" parameterType="map" resultType="hashmap">
+		SELECT *
+		  FROM (
+				SELECT 'CHUL_TB_ATTENDMASTER_ADDINFO' AS TBL
+					 , '강의정보' AS TBL_NM
+					 , COUNT(*) AS CNT
+				  FROM CHUL_TB_ATTENDMASTER_ADDINFO M
+				 INNER JOIN CHUL_TB_UNIV S
+					ON M.UNIV_CD = S.UNIV_CD
+				   AND M.YEAR = S.YEAR
+				   AND M.TERM_CD = S.TERM_CD
+				 WHERE S.UNIV_STS_CD = 'G004C001'
+				 UNION
+				SELECT 'CHUL_TB_ATTENDDETHIST' AS TBL
+					 , '출결데이터정보' AS TBL_NM
+					 , COUNT(*) AS CNT
+				  FROM CHUL_TB_ATTENDDETHIST M
+				 INNER JOIN CHUL_TB_UNIV S
+					ON M.UNIV_CD = S.UNIV_CD
+				   AND M.YEAR = S.YEAR
+				   AND M.TERM_CD = S.TERM_CD
+				 WHERE S.UNIV_STS_CD = 'G004C001'
+				 UNION
+				SELECT 'CHUL_TB_CLASSOFFMANAGE' AS TBL
+					 , '일괄휴강처리정보' AS TBL_NM
+					 , COUNT(*) AS CNT
+				  FROM CHUL_TB_CLASSOFFMANAGE M
+				 INNER JOIN CHUL_TB_UNIV S
+					ON M.UNIV_CD = S.UNIV_CD
+				   AND M.YEAR = S.YEAR
+				   AND M.TERM_CD = S.TERM_CD
+				 WHERE S.UNIV_STS_CD = 'G004C001'
+				 UNION
+				SELECT 'CHUL_TB_CLASSOFF_REQUEST' AS TBL
+					 , '휴보강신청정보' AS TBL_NM
+					 , COUNT(*) AS CNT
+				  FROM CHUL_TB_CLASSOFF_REQUEST M
+				 INNER JOIN CHUL_TB_UNIV S
+					ON M.UNIV_CD = S.UNIV_CD
+				   AND M.YEAR = S.YEAR
+				   AND M.TERM_CD = S.TERM_CD
+				 WHERE S.UNIV_STS_CD = 'G004C001'
+
+				<if test='univ_cd.equals("G001C9991")'>
+				 UNION
+				SELECT 'CHUL_TB_CLASSROOM_RESERVE' AS TBL
+					 , '강의실예약정보' AS TBL_NM
+					 , COUNT(*) AS CNT
+				  FROM CHUL_TB_CLASSROOM_RESERVE M
+				 INNER JOIN CHUL_TB_UNIV S
+					ON M.UNIV_CD = S.UNIV_CD
+				   AND M.YEAR = S.YEAR
+				   AND M.TERM_CD = S.TERM_CD
+				 WHERE S.UNIV_STS_CD = 'G004C001'
+				</if>
+		       ) A
+		 ORDER BY TBL_NM
+	</select>
+
+	<delete id="initSyncData" parameterType="string">
+		DELETE
+		  FROM ${value }
+		 WHERE (YEAR, TERM_CD) IN (
+									SELECT YEAR, TERM_CD
+									  FROM CHUL_TB_UNIV
+									 WHERE UNIV_STS_CD = 'G004C001'
+								   )
+	</delete>
+
+	<insert id="backSyncData" parameterType="map">
+		INSERT INTO ${targetTable } (
+										<choose>
+											<when test='mainTable.equals("CHUL_TB_ATTENDMASTER_ADDINFO")'>
+											   UNIV_CD, YEAR, TERM_CD, SUBJECT_CD, SUBJECT_DIV_CD, CLASS_CD, CLASSDAY, PROF_NO
+											 , CLASSHOUR_START_TIME, CLASSHOUR_END_TIME, CLASS_TYPE_CD, CLASSDAY_NAME, ATTENDEE_CNT
+											 , ATTEND_PROC_CNT, ATTEND_PRESENT_CNT, ATTEND_LATE_CNT, ATTEND_ABSENT_CNT, ATTEND_OFF_CNT
+											 , ATTEND_QUIT_CNT, ATTEND_AUTH_CNT, CLASS_CERT_NO, CLASS_CERT_TIME, CLASS_CERT_ISSUE_TIME
+											 , CLASS_STS_CD, CERT_STS_CD, ATTEND_AUTH_CD, CERT_TYPE, CLASS_ADM_CD, CLASS_PROG_CD
+											 , CLASS_NAME, PROF_NAME, PROF_COLL_NAME, PROF_DEPT_NAME, CLASSROOM_NO, BEFORE_CLASSDAY
+											 , IS_TEAM, REG_ETC, REG_DATE
+											</when>
+											<when test='mainTable.equals("CHUL_TB_ATTENDDETHIST")'>
+											   UNIV_CD, YEAR, TERM_CD, SUBJECT_CD, SUBJECT_DIV_CD, CLASS_CD, CLASSDAY, PROF_NO
+											 , CLASSHOUR_START_TIME, CLASSHOUR_END_TIME, CLASS_TYPE_CD, STUDENT_NO, STUDENT_NAME
+											 , STUDENT_COLL_NAME, STUDENT_DEPT_NAME, ATTEND_STS_CD, ATTEND_AUTH_CD, ATTEND_AUTH_REASON_CD
+											 , ATTEND_PROC_TIME, ATTEND_AUTH_PROC_TIME, BEFORE_CLASSDAY, REG_ETC, ABSENT_POINT, REG_DATE
+											 , IPADDR
+											</when>
+											<when test='mainTable.equals("CHUL_TB_CLASSOFFMANAGE")'>
+											   CLASSOFFMANAGE_NO, UNIV_CD, YEAR, TERM_CD, CLASSDAY, BEFORE_CLASSDAY
+											 , CLASSOFFMANAGE_SAYU, REGDATE, PERFORM_FLAG, PERFORM_DATE, VISIBLE_FLAG
+											</when>
+											<when test='mainTable.equals("CHUL_TB_CLASSOFF_REQUEST")'>
+											   REQ_NO, UNIV_CD, YEAR, TERM_CD, SUBJECT_CD, SUBJECT_DIV_CD, CLASS_CD, CLASSDAY, PROF_NO
+											 , CLASSHOUR_START_TIME, CLASSHOUR_END_TIME, CLASSDAY_NO, CLASS_NAME, PROF_NAME, ADD_CLASSDAY
+											 , ADD_CLASSHOUR_START_TIME, ADD_CLASSHOUR_END_TIME, ADD_CLASSDAY_NO, REQ_DATE, REQ_REASON
+											 , PROC_DATE, PROC_STATUS, PROC_REASON, RESERVE_SEQ, ADD_CLASSROOM_NO
+											</when>
+										</choose>
+
+									     , INPT_DATE
+						            )
+		SELECT
+
+			<choose>
+				<when test='mainTable.equals("CHUL_TB_ATTENDMASTER_ADDINFO")'>
+				   UNIV_CD, YEAR, TERM_CD, SUBJECT_CD, SUBJECT_DIV_CD, CLASS_CD, CLASSDAY, PROF_NO
+				 , CLASSHOUR_START_TIME, CLASSHOUR_END_TIME, CLASS_TYPE_CD, CLASSDAY_NAME, ATTENDEE_CNT
+				 , ATTEND_PROC_CNT, ATTEND_PRESENT_CNT, ATTEND_LATE_CNT, ATTEND_ABSENT_CNT, ATTEND_OFF_CNT
+				 , ATTEND_QUIT_CNT, ATTEND_AUTH_CNT, CLASS_CERT_NO, CLASS_CERT_TIME, CLASS_CERT_ISSUE_TIME
+				 , CLASS_STS_CD, CERT_STS_CD, ATTEND_AUTH_CD, CERT_TYPE, CLASS_ADM_CD, CLASS_PROG_CD
+				 , CLASS_NAME, PROF_NAME, PROF_COLL_NAME, PROF_DEPT_NAME, CLASSROOM_NO, BEFORE_CLASSDAY
+				 , IS_TEAM, REG_ETC, REG_DATE
+				</when>
+				<when test='mainTable.equals("CHUL_TB_ATTENDDETHIST")'>
+				   UNIV_CD, YEAR, TERM_CD, SUBJECT_CD, SUBJECT_DIV_CD, CLASS_CD, CLASSDAY, PROF_NO
+				 , CLASSHOUR_START_TIME, CLASSHOUR_END_TIME, CLASS_TYPE_CD, STUDENT_NO, STUDENT_NAME
+				 , STUDENT_COLL_NAME, STUDENT_DEPT_NAME, ATTEND_STS_CD, ATTEND_AUTH_CD, ATTEND_AUTH_REASON_CD
+				 , ATTEND_PROC_TIME, ATTEND_AUTH_PROC_TIME, BEFORE_CLASSDAY, REG_ETC, ABSENT_POINT, REG_DATE
+				 , IPADDR
+				</when>
+				<when test='mainTable.equals("CHUL_TB_CLASSOFFMANAGE")'>
+				   CLASSOFFMANAGE_NO, UNIV_CD, YEAR, TERM_CD, CLASSDAY, BEFORE_CLASSDAY
+				 , CLASSOFFMANAGE_SAYU, REGDATE, PERFORM_FLAG, PERFORM_DATE, VISIBLE_FLAG
+				</when>
+				<when test='mainTable.equals("CHUL_TB_CLASSOFF_REQUEST")'>
+				   REQ_NO, UNIV_CD, YEAR, TERM_CD, SUBJECT_CD, SUBJECT_DIV_CD, CLASS_CD, CLASSDAY, PROF_NO
+				 , CLASSHOUR_START_TIME, CLASSHOUR_END_TIME, CLASSDAY_NO, CLASS_NAME, PROF_NAME, ADD_CLASSDAY
+				 , ADD_CLASSHOUR_START_TIME, ADD_CLASSHOUR_END_TIME, ADD_CLASSDAY_NO, REQ_DATE, REQ_REASON
+				 , PROC_DATE, PROC_STATUS, PROC_REASON, RESERVE_SEQ, ADD_CLASSROOM_NO
+				</when>
+			</choose>
+
+		     , SYSDATE AS INPT_DATE
+		  FROM ${mainTable }
+		 WHERE (YEAR, TERM_CD) IN (
+									SELECT YEAR, TERM_CD
+									  FROM CHUL_TB_UNIV
+									 WHERE UNIV_STS_CD = 'G004C001'
+								   )
+	</insert>
+
+	<select id="getAdminStandCheckedDataCount" parameterType="map" resultType="int">
+		SELECT COUNT(*) CNT
+		  FROM (
+				SELECT S.UNIV_CD
+					 , S.YEAR
+					 , S.TERM_CD
+					 , S.TERM_NAME
+					 , M.SUBJECT_CD
+					 , M.SUBJECT_DIV_CD
+					 , M.CLASS_NAME
+			   		 , M.PROF_NO
+			  		 , M.PROF_NAME
+				     , COUNT(*) CNT
+				  FROM CHUL_TB_ATTENDMASTER_ADDINFO M
+				 INNER JOIN CHUL_TB_UNIV S
+			        ON M.UNIV_CD = S.UNIV_CD
+				   AND M.YEAR = S.YEAR
+				   AND M.TERM_CD = S.TERM_CD
+				   AND S.UNIV_STS_CD = 'G004C001'
+			     WHERE M.CLASS_TYPE_CD IN ('G019C001', 'G019C003')
+				 GROUP BY S.UNIV_CD
+						, S.YEAR
+						, S.TERM_CD
+						, S.TERM_NAME
+						, M.SUBJECT_CD
+						, M.SUBJECT_DIV_CD
+						, M.CLASS_NAME
+				   		, M.PROF_NO
+				  		, M.PROF_NAME
+				HAVING MOD(COUNT(*), ${searchValue }) <![CDATA[ <> ]]> 0
+		       ) A
+	</select>
+
+	<select id="getAdminStandCheckedData" parameterType="map" resultType="hashmap">
+		SELECT A.*
+		  FROM (
+				SELECT A.*
+					 , ROW_NUMBER() OVER (ORDER BY SUBJECT_CD, SUBJECT_DIV_CD) AS RNUM
+				  FROM (
+						SELECT S.UNIV_CD
+							 , S.YEAR
+							 , S.TERM_CD
+							 , S.TERM_NAME
+							 , M.SUBJECT_CD
+							 , M.SUBJECT_DIV_CD
+							 , M.CLASS_NAME
+					   		 , M.PROF_NO
+					  		 , M.PROF_NAME
+						     , COUNT(*) CNT
+						  FROM CHUL_TB_ATTENDMASTER_ADDINFO M
+						 INNER JOIN CHUL_TB_UNIV S
+					        ON M.UNIV_CD = S.UNIV_CD
+						   AND M.YEAR = S.YEAR
+						   AND M.TERM_CD = S.TERM_CD
+						   AND S.UNIV_STS_CD = 'G004C001'
+					     WHERE M.CLASS_TYPE_CD IN ('G019C001', 'G019C003')
+						 GROUP BY S.UNIV_CD
+								, S.YEAR
+								, S.TERM_CD
+								, S.TERM_NAME
+								, M.SUBJECT_CD
+								, M.SUBJECT_DIV_CD
+								, M.CLASS_NAME
+						   		, M.PROF_NO
+						  		, M.PROF_NAME
+						HAVING MOD(COUNT(*), ${searchValue }) <![CDATA[ <> ]]> 0
+					   ) A
+		       ) A
+		 WHERE A.RNUM BETWEEN #{startRow} AND #{endRow}
+	</select>
+
+	<select id="getAdminStandCloseCheckProfCount" parameterType="map" resultType="int">
+		SELECT COUNT(*) CNT
+		  FROM (
+				SELECT NVL(SUM(CASE WHEN ADM_CD = 'G026C001' OR ADM_CD = 'G026C002' THEN 1 END), 0) AS ADM_TOTAL
+					 , NVL(SUM(CASE WHEN ADM_CD = 'G026C001' THEN 1 END), 0) AS ADM_1
+				     , NVL(SUM(CASE WHEN ADM_CD = 'G026C002' THEN 1 END), 0) AS ADM_2
+				  FROM CHUL_TB_USERINFO
+			     WHERE AUTHORITY = 'ROLE_PROF'
+		       ) A
+	</select>
+
+	<select id="getAdminStandCloseCheckProf" parameterType="map" resultType="hashmap">
+		SELECT NVL(SUM(CASE WHEN ADM_CD = 'G026C001' OR ADM_CD = 'G026C002' THEN 1 END), 0) AS ADM_TOTAL
+			 , NVL(SUM(CASE WHEN ADM_CD = 'G026C001' THEN 1 END), 0) AS ADM_1
+		     , NVL(SUM(CASE WHEN ADM_CD = 'G026C002' THEN 1 END), 0) AS ADM_2
+		  FROM CHUL_TB_USERINFO
+	     WHERE AUTHORITY = 'ROLE_PROF'
+	</select>
+
+	<select id="getAdminStandCloseCheckClassCount" parameterType="map" resultType="int">
+		SELECT COUNT(*) CNT
+		  FROM (
+				SELECT M.YEAR
+					 , M.TERM_CD
+					 , S.TERM_NAME AS TERM_NM
+					 , S.TERM_START_DATE
+					 , NVL(SUM(CASE WHEN CLASS_ADM_CD = 'G027C001' OR CLASS_ADM_CD = 'G027C002' THEN 1 END), 0) AS CLASS_ADM_TOTAL
+					 , NVL(SUM(CASE WHEN CLASS_ADM_CD = 'G027C001' THEN 1 END), 0) AS CLASS_ADM_1
+				     , NVL(SUM(CASE WHEN CLASS_ADM_CD = 'G027C002' THEN 1 END), 0) AS CLASS_ADM_2
+				  FROM CHUL_TB_ATTENDMASTER_ADDINFO M
+				 INNER JOIN CHUL_TB_UNIV S
+				    ON M.UNIV_CD = S.UNIV_CD
+				   AND M.YEAR = S.YEAR
+				   AND M.TERM_CD = S.TERM_CD
+				 GROUP BY M.YEAR
+					    , M.TERM_CD
+						, S.TERM_NAME
+						, S.TERM_START_DATE
+		       ) A
+	</select>
+
+	<select id="getAdminStandCloseCheckClass" parameterType="map" resultType="hashmap">
+		SELECT M.YEAR
+			 , M.TERM_CD
+			 , S.TERM_NAME AS TERM_NM
+			 , S.TERM_START_DATE
+			 , NVL(SUM(CASE WHEN CLASS_ADM_CD = 'G027C001' OR CLASS_ADM_CD = 'G027C002' THEN 1 END), 0) AS CLASS_ADM_TOTAL
+			 , NVL(SUM(CASE WHEN CLASS_ADM_CD = 'G027C001' THEN 1 END), 0) AS CLASS_ADM_1
+		     , NVL(SUM(CASE WHEN CLASS_ADM_CD = 'G027C002' THEN 1 END), 0) AS CLASS_ADM_2
+		  FROM CHUL_TB_ATTENDMASTER_ADDINFO M
+		 INNER JOIN CHUL_TB_UNIV S
+		    ON M.UNIV_CD = S.UNIV_CD
+		   AND M.YEAR = S.YEAR
+		   AND M.TERM_CD = S.TERM_CD
+		 GROUP BY M.YEAR
+			    , M.TERM_CD
+				, S.TERM_NAME
+				, S.TERM_START_DATE
+		 ORDER BY S.TERM_START_DATE DESC
+	</select>
+
+	<update id="executeCloseDataChangeProf" parameterType="map">
+		<choose>
+			<when test='type2.equals("1")'>
+				UPDATE CHUL_TB_USERINFO
+				   SET ADM_CD = 'G026C002'
+				 WHERE ADM_CD = 'G026C001'
+				   AND AUTHORITY = 'ROLE_PROF'
+			</when>
+			<when test='type2.equals("2")'>
+				UPDATE CHUL_TB_USERINFO
+				   SET ADM_CD = 'G026C001'
+				 WHERE ADM_CD = 'G026C002'
+				   AND AUTHORITY = 'ROLE_PROF'
+			</when>
+		</choose>
+	</update>
+
+	<update id="executeCloseDataChangeClass" parameterType="map">
+		<choose>
+			<when test='type2.equals("1")'>
+				UPDATE CHUL_TB_ATTENDMASTER_ADDINFO
+				   SET CLASS_ADM_CD = 'G027C002'
+				 WHERE YEAR = #{year }
+			       AND TERM_CD = #{term_cd }
+			       AND CLASS_ADM_CD = 'G027C001'
+			</when>
+			<when test='type2.equals("2")'>
+				UPDATE CHUL_TB_ATTENDMASTER_ADDINFO
+				   SET CLASS_ADM_CD = 'G027C001'
+				 WHERE YEAR = #{year }
+			       AND TERM_CD = #{term_cd }
+			       AND CLASS_ADM_CD = 'G027C002'
+			</when>
+		</choose>
+	</update>
+
+	<select id="getLogListCount" parameterType="map" resultType="int">
+		SELECT COUNT(*) AS CNT
+		  FROM CHUL_TB_LOG
+		 WHERE 1=1
+
+		<choose>
+			<when test='type != null and !type.equals("")'>
+				AND TYPE = #{type}
+			</when>
+			<otherwise>
+				AND TYPE IN ('SYNC', 'BATCH', 'GONGGYUL')
+			</otherwise>
+		</choose>
+
+		<if test='class_cd != null and !class_cd.equals("")'>
+			AND CLASS_CD = #{class_cd}
+		</if>
+		<if test='prof_no != null and !prof_no.equals("")'>
+			AND PROF_NO = #{prof_no}
+		</if>
+		<if test='student_no != null and !student_no.equals("")'>
+			AND STUDENT_NO = #{student_no}
+		</if>
+		<if test='classday != null and !classday.equals("")'>
+			AND CLASSDAY = #{classday}
+		</if>
+	</select>
+
+	<select id="getLogList" parameterType="map" resultType="com.icerti.ezcerti.domain.Log">
+		SELECT A.*
+		  FROM (
+				SELECT *
+		    	  FROM (
+		    	  		SELECT ROW_NUMBER() OVER(ORDER BY REG_DATE DESC) AS ROW_NO
+		        	  		 , TYPE
+		        	  		 , CLASS_CD
+		        	  		 , CLASSDAY
+		        	  		 , PROF_NO
+		        	  		 , STUDENT_NO
+		        	  		 , MSG
+		        	  		 , REG_DATE
+		        	  	  FROM CHUL_TB_LOG
+		        		 WHERE 1=1
+
+						<choose>
+							<when test='type != null and !type.equals("")'>
+								AND TYPE = #{type}
+							</when>
+							<otherwise>
+								AND TYPE IN ('SYNC', 'BATCH', 'GONGGYUL')
+							</otherwise>
+						</choose>
+
+						<if test='class_cd != null and !class_cd.equals("")'>
+							AND CLASS_CD = #{class_cd}
+						</if>
+						<if test='prof_no != null and !prof_no.equals("")'>
+							AND PROF_NO = #{prof_no}
+						</if>
+						<if test='student_no != null and !student_no.equals("")'>
+							AND STUDENT_NO = #{student_no}
+						</if>
+						<if test='classday != null and !classday.equals("")'>
+							AND CLASSDAY = #{classday}
+						</if>
+		    	  	   ) A
+		    	 WHERE ROW_NO BETWEEN #{startRow} AND #{endRow}
+		       ) A
+	</select>
+
+	<select id="getAdminTermEndManageCount" parameterType="map" resultType="int">
+		SELECT COUNT(*) AS CNT
+	  	  FROM (
+				SELECT P.COLL_NAME
+					 , P.DEPT_NAME
+					 , P.PROF_ADM_CD
+					 , A.CLASS_ADM_CD
+					 , A.PROF_NO
+					 , P.PROF_NAME
+					 , A.TOT_CNT
+					 , A.PROC_CNT
+					 , A.NOT_PROC_CNT
+					 , (
+						SELECT COUNT(*) CNT
+						  FROM (
+								SELECT ROW_NUMBER() OVER (ORDER BY CLASS_CD, CLASSDAY) AS ROW_NO
+									 , AM1.*
+								  FROM (
+										SELECT 1 AS REG_ETC
+											 , AM1.CLASS_CD
+											 , AM1.SUBJECT_CD
+											 , AM1.SUBJECT_DIV_CD
+											 , AM1.CLASSDAY_NAME
+											 , AM1.CLASSHOUR_START_TIME
+											 , AM1.CLASSHOUR_END_TIME
+											 , AM1.CLASS_NAME
+											 , AM1.ATTENDEE_CNT
+											 , AM1.CLASSDAY
+											 , AM1.CLASS_STS_CD
+											 , AM1.CLASS_TYPE_CD
+											 , AM1.PROF_NO
+										  FROM V_CHUL_VW_ATTENDMASTER AM1
+										 WHERE UNIV_CD = #{univ_cd }
+										   AND YEAR = #{year }
+										   AND TERM_CD = #{term_cd }
+										   AND CLASS_TYPE_CD IN ('G019C001','G019C003')
+										   AND ATTENDEE_CNT != (ATTEND_PRESENT_CNT + ATTEND_LATE_CNT + ATTEND_ABSENT_CNT+ATTEND_QUIT_CNT + ATTEND_OFF_CNT)
+									   ) AM1
+
+								 UNION
+
+								SELECT ROW_NUMBER() OVER (ORDER BY CLASS_CD, CLASSDAY) AS ROW_NO
+									 , AM2.*
+								  FROM (
+										SELECT 2 AS REG_ETC
+											 , AM2.CLASS_CD
+											 , AM2.SUBJECT_CD
+											 , AM2.SUBJECT_DIV_CD
+											 , AM2.CLASSDAY_NAME
+											 , AM2.CLASSHOUR_START_TIME
+											 , AM2.CLASSHOUR_END_TIME
+											 , AM2.CLASS_NAME
+											 , AM2.ATTENDEE_CNT
+											 , AM2.CLASSDAY
+											 , AM2.CLASS_STS_CD
+											 , AM2.CLASS_TYPE_CD
+											 , AM2.PROF_NO
+										  FROM V_CHUL_VW_ATTENDMASTER AM2
+										 WHERE UNIV_CD = #{univ_cd }
+										   AND YEAR = #{year }
+										   AND TERM_CD = #{term_cd }
+										   AND CLASS_TYPE_CD IN ('G019C001','G019C003')
+										   AND ATTENDEE_CNT=ATTEND_ABSENT_CNT+ATTEND_QUIT_CNT+ATTEND_OFF_CNT
+										   AND ATTENDEE_CNT != '1'
+										   AND (CERT_TYPE IS NULL OR CERT_TYPE = '')
+									   ) AM2
+							   ) B
+              			   WHERE B.PROF_NO = A.PROF_NO
+					   ) AS UN_CHK_ATTENDDATA
+					FROM (
+						  SELECT B.UNIV_CD
+							   , B.YEAR
+							   , B.TERM_CD
+							   , B.PROF_NO
+							   , MAX(B.CLASS_ADM_CD) AS CLASS_ADM_CD
+							   , COUNT(B.PROF_NO) AS TOT_CNT
+							   , SUM(CASE WHEN (B.CLASS_STS_CD = 'G020C003' AND B.CERT_TYPE > ' ') OR B.CLASS_STS_CD = 'G020C002' THEN 1 ELSE 0 END) AS PROC_CNT
+							   , SUM(CASE WHEN (B.CERT_TYPE IS NULL OR B.CERT_TYPE = '')
+											    AND (B.ATTEND_AUTH_CNT = 0 AND B.ATTEND_PRESENT_CNT = 0 AND B.ATTEND_LATE_CNT = 0)
+										       THEN 1 ELSE 0 END) AS NOT_PROC_CNT
+						    FROM CHUL_TB_ATTENDMASTER_ADDINFO B
+						   WHERE B.UNIV_CD = #{univ_cd }
+							 AND B.YEAR = #{year }
+							 AND B.TERM_CD = #{term_cd }
+
+						   <if test="!searchValue.equals('')">
+						   	AND B.PROF_NO = #{searchValue}
+						   </if>
+
+							 AND B.CLASS_TYPE_CD IN ('G019C001','G019C003')
+							 AND B.ATTENDEE_CNT != 0
+							 AND B.CLASS_ADM_CD = 'G027C001'
+						   GROUP BY B.UNIV_CD
+						   		  , B.YEAR
+						   		  , B.TERM_CD
+						   		  , B.PROF_NO
+						 ) A
+				   INNER JOIN V_CHUL_VW_PROF P
+				      ON A.PROF_NO = P.PROF_NO
+	  	       ) A
+	</select>
+
+	<select id="getAdminTermEndManage" parameterType="map" resultType="hashmap">
+		SELECT P.COLL_NAME
+			 , P.DEPT_NAME
+			 , P.PROF_ADM_CD
+			 , A.CLASS_ADM_CD
+			 , A.PROF_NO
+			 , P.PROF_NAME
+			 , A.TOT_CNT
+			 , A.PROC_CNT
+			 , A.NOT_PROC_CNT
+			 , (
+				SELECT COUNT(*) CNT
+				  FROM (
+						SELECT ROW_NUMBER() OVER (ORDER BY CLASS_CD, CLASSDAY) AS ROW_NO
+							 , AM1.*
+						  FROM (
+								SELECT 1 AS REG_ETC
+									 , AM1.CLASS_CD
+									 , AM1.SUBJECT_CD
+									 , AM1.SUBJECT_DIV_CD
+									 , AM1.CLASSDAY_NAME
+									 , AM1.CLASSHOUR_START_TIME
+									 , AM1.CLASSHOUR_END_TIME
+									 , AM1.CLASS_NAME
+									 , AM1.ATTENDEE_CNT
+									 , AM1.CLASSDAY
+									 , AM1.CLASS_STS_CD
+									 , AM1.CLASS_TYPE_CD
+									 , AM1.PROF_NO
+								  FROM V_CHUL_VW_ATTENDMASTER AM1
+								 WHERE UNIV_CD = #{univ_cd }
+								   AND YEAR = #{year }
+								   AND TERM_CD = #{term_cd }
+								   AND CLASS_TYPE_CD IN ('G019C001','G019C003')
+								   AND ATTENDEE_CNT != (ATTEND_PRESENT_CNT + ATTEND_LATE_CNT + ATTEND_ABSENT_CNT+ATTEND_QUIT_CNT + ATTEND_OFF_CNT)
+							   ) AM1
+
+						 UNION
+
+						SELECT ROW_NUMBER() OVER (ORDER BY CLASS_CD, CLASSDAY) AS ROW_NO
+							 , AM2.*
+						  FROM (
+								SELECT 2 AS REG_ETC
+									 , AM2.CLASS_CD
+									 , AM2.SUBJECT_CD
+									 , AM2.SUBJECT_DIV_CD
+									 , AM2.CLASSDAY_NAME
+									 , AM2.CLASSHOUR_START_TIME
+									 , AM2.CLASSHOUR_END_TIME
+									 , AM2.CLASS_NAME
+									 , AM2.ATTENDEE_CNT
+									 , AM2.CLASSDAY
+									 , AM2.CLASS_STS_CD
+									 , AM2.CLASS_TYPE_CD
+									 , AM2.PROF_NO
+								  FROM V_CHUL_VW_ATTENDMASTER AM2
+								 WHERE UNIV_CD = #{univ_cd }
+								   AND YEAR = #{year }
+								   AND TERM_CD = #{term_cd }
+								   AND CLASS_TYPE_CD IN ('G019C001','G019C003')
+								   AND ATTENDEE_CNT=ATTEND_ABSENT_CNT+ATTEND_QUIT_CNT+ATTEND_OFF_CNT
+								   AND ATTENDEE_CNT != '1'
+								   AND (CERT_TYPE IS NULL OR CERT_TYPE = '')
+							   ) AM2
+					   ) B
+              	   WHERE B.PROF_NO = A.PROF_NO
+			   ) AS UN_CHK_ATTENDDATA
+			FROM (
+				  SELECT B.UNIV_CD
+					   , B.YEAR
+					   , B.TERM_CD
+					   , B.PROF_NO
+					   , MAX(B.CLASS_ADM_CD) AS CLASS_ADM_CD
+					   , COUNT(B.PROF_NO) AS TOT_CNT
+					   , SUM(CASE WHEN (B.CLASS_STS_CD = 'G020C003' AND B.CERT_TYPE > ' ') OR B.CLASS_STS_CD = 'G020C002' THEN 1 ELSE 0 END) AS PROC_CNT
+					   , SUM(CASE WHEN (B.CERT_TYPE IS NULL OR B.CERT_TYPE = '')
+									    AND (B.ATTEND_AUTH_CNT = 0 AND B.ATTEND_PRESENT_CNT = 0 AND B.ATTEND_LATE_CNT = 0)
+								       THEN 1 ELSE 0 END) AS NOT_PROC_CNT
+				    FROM CHUL_TB_ATTENDMASTER_ADDINFO B
+				   WHERE B.UNIV_CD = #{univ_cd }
+					 AND B.YEAR = #{year }
+					 AND B.TERM_CD = #{term_cd }
+
+				   <if test="!searchValue.equals('')">
+				    AND B.PROF_NO = #{searchValue}
+				   </if>
+
+					 AND B.CLASS_TYPE_CD IN ('G019C001','G019C003')
+					 AND B.ATTENDEE_CNT != 0
+					 AND B.CLASS_ADM_CD = 'G027C001'
+				   GROUP BY B.UNIV_CD
+				   		  , B.YEAR
+				   		  , B.TERM_CD
+				   		  , B.PROF_NO
+				 ) A
+		   INNER JOIN V_CHUL_VW_PROF P
+		      ON A.PROF_NO = P.PROF_NO
+	</select>
+
+	<select id="getTransmitDataExcel" parameterType="map" resultType="hashmap">
+		  WITH CUR_TERM AS (
+						    SELECT UNIV_CD, YEAR, TERM_CD
+						      FROM CHUL_TB_UNIV
+						     WHERE YEAR = #{year }
+							   AND TERM_CD = #{term_cd }
+						   )
+		  SELECT B.YEAR
+		         , CASE WHEN B.TERM_CD = 'G002C001' THEN '1'
+		      				 WHEN B.TERM_CD = 'G002C002' THEN '2'
+		      		ELSE B.TERM_CD
+		  				END TERM_CD
+		  			 , B.DEPT_CD
+		  			 , B.SUBJECT_CD2 AS SUBJECT_CD
+		  			 , B.SUBJECT_DIV_CD
+		  			 , GRADE
+		  			 , (
+		  			 		SELECT SUBJECT_NAME
+		  			 		 FROM V_CHUL_VW_SUBJECT
+		  			 		WHERE YEAR = B.YEAR
+		  			 		  AND TERM_CD = B.TERM_CD
+		  			 		  AND SUBJECT_CD = B.SUBJECT_CD
+		  			 		  AND SUBJECT_DIV_CD = B.SUBJECT_DIV_CD
+		  			   ) AS CLASS_NAME
+		  			 , B.STUDENT_NO
+		  			 , B.ATTEND_PRESENT_CNT
+		  			 , B.ATTEND_LATE_CNT
+		  			 , B.ATTEND_ABSENT_CNT
+		  			 , ER.ATTEND_POINT AS ATTEND_STD_POINT
+		  			 , CASE WHEN B.CLASS_CNT = 1 AND ATTEND_LATE_ABSENT_CNT <![CDATA[ >= ]]> 4 THEN 0
+						        WHEN B.CLASS_CNT = 2 AND ATTEND_LATE_ABSENT_CNT <![CDATA[ >= ]]> 8 THEN 0
+						        WHEN B.CLASS_CNT = 3 AND ATTEND_LATE_ABSENT_CNT <![CDATA[ >= ]]> 12 THEN 0
+						        WHEN B.CLASS_CNT = 4 AND ATTEND_LATE_ABSENT_CNT <![CDATA[ >= ]]> 16 THEN 0
+						        WHEN B.CLASS_CNT = 5 AND ATTEND_LATE_ABSENT_CNT <![CDATA[ >= ]]> 19 THEN 0
+						        WHEN B.CLASS_CNT = 6 AND ATTEND_LATE_ABSENT_CNT <![CDATA[ >= ]]> 23 THEN 0
+						 ELSE
+						        CASE WHEN (ER.ATTEND_POINT - B.ATTEND_LATE_ABSENT_CNT) <![CDATA[ < ]]> 0 THEN 0
+						        ELSE ER.ATTEND_POINT - B.ATTEND_LATE_ABSENT_CNT
+						        END
+		            END ATTEND_POINT
+		  			 , B.CLASS_CNT
+		FROM
+			(
+		  		SELECT A.UNIV_CD, A.YEAR, A.TERM_CD, SUBSTR(A.SUBJECT_CD, 1, 5) AS DEPT_CD, SUBSTR(A.SUBJECT_CD, 7, 6) AS SUBJECT_CD2, SUBSTR(A.SUBJECT_CD, 14, 1) AS GRADE, A.SUBJECT_CD, A.SUBJECT_DIV_CD, STUDENT_NO
+		  		        , ATTEND_PRESENT_CNT, ATTEND_LATE_CNT, ATTEND_ABSENT_CNT
+		  		        , CASE WHEN ATTEND_LATE_CNT > 0 THEN (ATTEND_ABSENT_CNT + FLOOR(ATTEND_LATE_CNT / 3))
+		                ELSE ATTEND_ABSENT_CNT
+		                END ATTEND_LATE_ABSENT_CNT
+		             , CLS.CNT AS CLASS_CNT
+		      FROM
+		         (
+		    				SELECT A.UNIV_CD, A.YEAR, A.TERM_CD, A.SUBJECT_CD, A.SUBJECT_DIV_CD, A.STUDENT_NO
+		    				        , SUM(ATTEND_PRESENT_CNT2) AS ATTEND_PRESENT_CNT, SUM(ATTEND_LATE_CNT) AS ATTEND_LATE_CNT, SUM(ATTEND_ABSENT_CNT2) AS ATTEND_ABSENT_CNT
+		               FROM
+		                  (
+		      						SELECT A.UNIV_CD, A.YEAR, A.TERM_CD, A.SUBJECT_CD, A.SUBJECT_DIV_CD, A.STUDENT_NO
+		      						       , A.ATTEND_PRESENT_CNT, A.ATTEND_LATE_CNT, A.ATTEND_ABSENT_CNT
+		      						       , CASE WHEN CLASS_CNT = 1 THEN ATTEND_PRESENT_CNT
+											             WHEN CLASS_CNT = 2 THEN ATTEND_PRESENT_CNT
+											             WHEN CLASS_CNT = 3 THEN
+											                      CASE WHEN EXAM_CNT = 1 THEN
+														                            	CASE WHEN ATTEND_PRESENT_CNT = 0 THEN 0
+															                                   WHEN ATTEND_PRESENT_CNT = 1 THEN 3
+															                            ELSE ATTEND_PRESENT_CNT
+															                            END
+											                           	WHEN EXAM_CNT = 2 THEN
+														                            CASE WHEN ATTEND_PRESENT_CNT = 0 THEN 0
+														                                 WHEN ATTEND_PRESENT_CNT = 1 THEN 1
+														                                 WHEN ATTEND_PRESENT_CNT = 2 THEN 3
+														                                 ELSE ATTEND_PRESENT_CNT
+														                            END
+											                           WHEN EXAM_CNT = 3 THEN ATTEND_PRESENT_CNT
+											                      ELSE ATTEND_PRESENT_CNT
+											                       END
+											             WHEN CLASS_CNT = 4 THEN
+											                      CASE WHEN EXAM_CNT = 1 THEN
+											                            CASE WHEN ATTEND_PRESENT_CNT = 0 THEN 0
+											                                 WHEN ATTEND_PRESENT_CNT = 1 THEN 4
+											                                 ELSE ATTEND_PRESENT_CNT
+											                            END
+											                           WHEN EXAM_CNT = 2 THEN
+											                            CASE WHEN ATTEND_PRESENT_CNT = 0 THEN 0
+											                                 WHEN ATTEND_PRESENT_CNT = 1 THEN 2
+											                                 WHEN ATTEND_PRESENT_CNT = 2 THEN 4
+											                                 ELSE ATTEND_PRESENT_CNT
+											                            END
+											                           WHEN EXAM_CNT = 3 THEN
+											                            CASE WHEN ATTEND_PRESENT_CNT = 0 THEN 0
+											                                 WHEN ATTEND_PRESENT_CNT = 1 THEN 1
+											                                 WHEN ATTEND_PRESENT_CNT = 2 THEN 2
+											                                 WHEN ATTEND_PRESENT_CNT = 3 THEN 4
+											                                 ELSE ATTEND_PRESENT_CNT
+											                            END
+											                           WHEN EXAM_CNT = 4 THEN ATTEND_PRESENT_CNT
+											                           ELSE ATTEND_PRESENT_CNT
+											                      		  END
+											             WHEN CLASS_CNT = 6 THEN
+											                      CASE WHEN EXAM_CNT = 1 THEN
+											                            CASE WHEN ATTEND_PRESENT_CNT = 0 THEN 0
+											                                 WHEN ATTEND_PRESENT_CNT = 1 THEN 6
+											                                 ELSE ATTEND_PRESENT_CNT
+											                            END
+											                           WHEN EXAM_CNT = 2 THEN
+											                            CASE WHEN ATTEND_PRESENT_CNT = 0 THEN 0
+											                                 WHEN ATTEND_PRESENT_CNT = 1 THEN 3
+											                                 WHEN ATTEND_PRESENT_CNT = 2 THEN 6
+											                                 ELSE ATTEND_PRESENT_CNT
+											                            END
+											                           WHEN EXAM_CNT = 3 THEN
+											                            CASE WHEN ATTEND_PRESENT_CNT = 0 THEN 0
+											                                 WHEN ATTEND_PRESENT_CNT = 1 THEN 2
+											                                 WHEN ATTEND_PRESENT_CNT = 2 THEN 4
+											                                 WHEN ATTEND_PRESENT_CNT = 3 THEN 6
+											                                 ELSE ATTEND_PRESENT_CNT
+											                            END
+											                           WHEN EXAM_CNT = 4 THEN
+											                            CASE WHEN ATTEND_PRESENT_CNT = 0 THEN 0
+											                                 WHEN ATTEND_PRESENT_CNT = 1 THEN 1
+											                                 WHEN ATTEND_PRESENT_CNT = 2 THEN 3
+											                                 WHEN ATTEND_PRESENT_CNT = 3 THEN 4
+											                                 WHEN ATTEND_PRESENT_CNT = 4 THEN 6
+											                                 ELSE ATTEND_PRESENT_CNT
+											                            END
+											                           WHEN EXAM_CNT = 5 THEN
+											                            CASE WHEN ATTEND_PRESENT_CNT = 0 THEN 0
+											                                 WHEN ATTEND_PRESENT_CNT = 1 THEN 1
+											                                 WHEN ATTEND_PRESENT_CNT = 2 THEN 2
+											                                 WHEN ATTEND_PRESENT_CNT = 3 THEN 3
+											                                 WHEN ATTEND_PRESENT_CNT = 4 THEN 4
+											                                 WHEN ATTEND_PRESENT_CNT = 5 THEN 6
+											                                 ELSE ATTEND_PRESENT_CNT
+											                            END
+											                           WHEN EXAM_CNT = 6 THEN ATTEND_PRESENT_CNT
+											                           ELSE ATTEND_PRESENT_CNT
+											                      END
+											                ELSE ATTEND_PRESENT_CNT
+											          END ATTEND_PRESENT_CNT2,
+											          CASE WHEN CLASS_CNT = 1 THEN ATTEND_ABSENT_CNT
+											               WHEN CLASS_CNT = 2 THEN ATTEND_ABSENT_CNT
+											               WHEN CLASS_CNT = 3 THEN
+											                      CASE WHEN EXAM_CNT = 1 THEN
+											                            CASE WHEN ATTEND_PRESENT_CNT = 0 THEN 3
+											                                 WHEN ATTEND_PRESENT_CNT = 1 THEN 0
+											                                 ELSE ATTEND_ABSENT_CNT
+											                            END
+											                           WHEN EXAM_CNT = 2 THEN
+											                            CASE WHEN ATTEND_PRESENT_CNT = 0 THEN 3
+											                                 WHEN ATTEND_PRESENT_CNT = 1 THEN 2
+											                                 WHEN ATTEND_PRESENT_CNT = 2 THEN 0
+											                                 ELSE ATTEND_ABSENT_CNT
+											                            END
+											                           WHEN EXAM_CNT = 3 THEN ATTEND_ABSENT_CNT
+											                           ELSE ATTEND_ABSENT_CNT
+											                      END
+											              WHEN CLASS_CNT = 4 THEN
+											                      CASE WHEN EXAM_CNT = 1 THEN
+											                            CASE WHEN ATTEND_PRESENT_CNT = 0 THEN 4
+											                                 WHEN ATTEND_PRESENT_CNT = 1 THEN 0
+											                                 ELSE ATTEND_ABSENT_CNT
+											                            END
+											                           WHEN EXAM_CNT = 2 THEN
+											                            CASE WHEN ATTEND_PRESENT_CNT = 0 THEN 4
+											                                 WHEN ATTEND_PRESENT_CNT = 1 THEN 2
+											                                 WHEN ATTEND_PRESENT_CNT = 2 THEN 0
+											                                 ELSE ATTEND_ABSENT_CNT
+											                            END
+											                           WHEN EXAM_CNT = 3 THEN
+											                            CASE WHEN ATTEND_PRESENT_CNT = 0 THEN 4
+											                                 WHEN ATTEND_PRESENT_CNT = 1 THEN 3
+											                                 WHEN ATTEND_PRESENT_CNT = 2 THEN 2
+											                                 WHEN ATTEND_PRESENT_CNT = 3 THEN 0
+											                                 ELSE ATTEND_ABSENT_CNT
+											                            END
+											                           WHEN EXAM_CNT = 4 THEN ATTEND_ABSENT_CNT
+											                           ELSE ATTEND_ABSENT_CNT
+											                      		  END
+											              WHEN CLASS_CNT = 6 THEN
+											                      CASE WHEN EXAM_CNT = 1 THEN
+											                            CASE WHEN ATTEND_PRESENT_CNT = 0 THEN 6
+											                                 WHEN ATTEND_PRESENT_CNT = 1 THEN 0
+											                                 ELSE ATTEND_ABSENT_CNT
+											                            END
+											                           WHEN EXAM_CNT = 2 THEN
+											                            CASE WHEN ATTEND_PRESENT_CNT = 0 THEN 6
+											                                 WHEN ATTEND_PRESENT_CNT = 1 THEN 3
+											                                 WHEN ATTEND_PRESENT_CNT = 2 THEN 0
+											                                 ELSE ATTEND_ABSENT_CNT
+											                            END
+											                           WHEN EXAM_CNT = 3 THEN
+											                            CASE WHEN ATTEND_PRESENT_CNT = 0 THEN 6
+											                                 WHEN ATTEND_PRESENT_CNT = 1 THEN 4
+											                                 WHEN ATTEND_PRESENT_CNT = 2 THEN 2
+											                                 WHEN ATTEND_PRESENT_CNT = 3 THEN 0
+											                                 ELSE ATTEND_ABSENT_CNT
+											                            END
+											                           WHEN EXAM_CNT = 4 THEN
+											                            CASE WHEN ATTEND_PRESENT_CNT = 0 THEN 6
+											                                 WHEN ATTEND_PRESENT_CNT = 1 THEN 5
+											                                 WHEN ATTEND_PRESENT_CNT = 2 THEN 3
+											                                 WHEN ATTEND_PRESENT_CNT = 3 THEN 2
+											                                 WHEN ATTEND_PRESENT_CNT = 4 THEN 0
+											                                 ELSE ATTEND_ABSENT_CNT
+											                            END
+											                           WHEN EXAM_CNT = 5 THEN
+											                            CASE WHEN ATTEND_PRESENT_CNT = 0 THEN 6
+											                                 WHEN ATTEND_PRESENT_CNT = 1 THEN 5
+											                                 WHEN ATTEND_PRESENT_CNT = 2 THEN 4
+											                                 WHEN ATTEND_PRESENT_CNT = 3 THEN 3
+											                                 WHEN ATTEND_PRESENT_CNT = 4 THEN 2
+											                                 WHEN ATTEND_PRESENT_CNT = 5 THEN 0
+											                                 ELSE ATTEND_ABSENT_CNT
+											                            END
+											                           WHEN EXAM_CNT = 6 THEN ATTEND_ABSENT_CNT
+											                           ELSE ATTEND_ABSENT_CNT
+											                      		  END
+											                ELSE ATTEND_ABSENT_CNT
+											          END ATTEND_ABSENT_CNT2
+		      						FROM
+		      								(
+		          									SELECT AH.UNIV_CD, AH.YEAR, AH.TERM_CD, AH.SUBJECT_CD, AH.SUBJECT_DIV_CD, AH.STUDENT_NO, AH.EXAM_TYPE, AH.CLASS_NUM, AH.CLASS_CNT, AH.EXAM_CNT
+		          									        , COUNT(CASE WHEN AH.ATTEND_STS_CD = 'G023C002' THEN 1 END) * AH.CLASS_NUM AS ATTEND_PRESENT_CNT
+		          									        , COUNT(CASE WHEN AH.ATTEND_STS_CD = 'G023C003' THEN 1 END) * AH.CLASS_NUM AS ATTEND_LATE_CNT
+		          									        , COUNT(CASE WHEN AH.ATTEND_STS_CD = 'G023C004' THEN 1 END) * AH.CLASS_NUM AS ATTEND_ABSENT_CNT
+											          FROM
+											          		(
+													            SELECT AH.UNIV_CD, AH.YEAR, AH.TERM_CD, AH.SUBJECT_CD, AH.SUBJECT_DIV_CD, AH.STUDENT_NO
+													                    , AH.ATTEND_STS_CD, AH.PROF_NO, AM.PROF_NO, ET.EXAM_TYPE, CLS.CLASS_NUM AS CLASS_CNT, ET.EXAM_CNT
+													                    , CASE WHEN ET.EXAM_CNT = 1 THEN CLS.CLASS_NUM
+													                             WHEN ET.EXAM_CNT > 1 THEN 1
+																		               ELSE 1
+																		         END CLASS_NUM
+													              FROM CHUL_TB_ATTENDMASTER_ADDINFO AM
+													             INNER JOIN CHUL_TB_ATTENDDETHIST AH
+													                 ON AM.UNIV_CD = AH.UNIV_CD
+													               AND AM.YEAR = AH.YEAR
+													               AND AM.TERM_CD = AH.TERM_CD
+													               AND AM.CLASS_CD = AH.CLASS_CD
+													               AND AM.PROF_NO = AH.PROF_NO
+													               AND AM.CLASSDAY = AH.CLASSDAY
+													               AND AM.CLASSHOUR_START_TIME = AH.CLASSHOUR_START_TIME
+													               AND AM.CLASS_TYPE_CD = AH.CLASS_TYPE_CD
+													             INNER JOIN V_CHUL_VW_ATTENDEE ATD
+													                 ON ATD.UNIV_CD = AH.UNIV_CD
+													               AND ATD.YEAR = AH.YEAR
+													               AND ATD.TERM_CD = AH.TERM_CD
+													               AND ATD.SUBJECT_CD = AH.SUBJECT_CD
+													               AND ATD.SUBJECT_DIV_CD = AH.SUBJECT_DIV_CD
+													               AND ATD.STUDENT_NO = AH.STUDENT_NO
+													             INNER JOIN V_CHUL_VW_SUBJECT CLS
+													                ON CLS.UNIV_CD = ATD.UNIV_CD
+													               AND CLS.YEAR = ATD.YEAR
+													               AND CLS.TERM_CD = ATD.TERM_CD
+													               AND CLS.SUBJECT_CD = ATD.SUBJECT_CD
+													               AND CLS.SUBJECT_DIV_CD = ATD.SUBJECT_DIV_CD
+													             LEFT OUTER JOIN TB_EXAM_ATTENDMASTER_MST EXAM
+													               ON EXAM.UNIV_CD = AM.UNIV_CD
+													               AND EXAM.YEAR = AM.YEAR
+													               AND EXAM.TERM_CD = AM.TERM_CD
+													               AND EXAM.CLASS_CD = AM.CLASS_CD
+													               AND EXAM.PROF_NO = AM.PROF_NO
+													               AND EXAM.CLASSDAY = AM.CLASSDAY
+													               AND EXAM.CLASSHOUR_START_TIME = AM.CLASSHOUR_START_TIME
+													               AND EXAM.CLASS_TYPE_CD = AM.CLASS_TYPE_CD
+													              LEFT OUTER JOIN
+													              		(
+															                  SELECT M.UNIV_CD, M.YEAR, M.TERM_CD, M.SUBJECT_CD, M.SUBJECT_DIV_CD, M.EXAM_TYPE, M.PROF_NO, COUNT(M.EXAM_TYPE) AS EXAM_CNT
+															                   FROM TB_EXAM_CLASS_INFO_MST M
+		                                            WHERE (M.UNIV_CD, M.YEAR, M.TERM_CD)
+		                                               IN (
+		                                                    SELECT UNIV_CD, YEAR, TERM_CD
+		                                                      FROM CUR_TERM
+		                                                   )
+															                  GROUP BY M.UNIV_CD, M.YEAR, M.TERM_CD, M.SUBJECT_CD, M.SUBJECT_DIV_CD, M.EXAM_TYPE, M.PROF_NO
+													              		) ET
+													                  ON ET.UNIV_CD = EXAM.UNIV_CD
+													                AND ET.YEAR = EXAM.YEAR
+													                AND ET.TERM_CD = EXAM.TERM_CD
+													                AND ET.SUBJECT_CD = EXAM.SUBJECT_CD
+													                AND ET.SUBJECT_DIV_CD = EXAM.SUBJECT_DIV_CD
+													                AND ET.PROF_NO = EXAM.PROF_NO
+													                AND ET.EXAM_TYPE = EXAM.REG_ETC
+		                                    INNER JOIN CHUL_TB_USERINFO US
+		                                       ON US.USER_NO = AM.PROF_NO
+		                                  WHERE (AM.UNIV_CD, AM.YEAR, AM.TERM_CD)
+		                                     IN (
+		                                          SELECT UNIV_CD, YEAR, TERM_CD
+		                                            FROM CUR_TERM
+		                                         )
+													              AND AM.CLASS_TYPE_CD IN ( 'G019C001', 'G019C003')
+											          		) AH
+											          GROUP BY AH.UNIV_CD, AH.YEAR, AH.TERM_CD, AH.SUBJECT_CD, AH.SUBJECT_DIV_CD, AH.STUDENT_NO, AH.EXAM_TYPE, AH.CLASS_NUM, AH.CLASS_CNT, AH.EXAM_CNT
+		      								) A
+		                  ) A
+		    				 GROUP BY A.UNIV_CD, A.YEAR, A.TERM_CD, A.SUBJECT_CD, A.SUBJECT_DIV_CD, A.STUDENT_NO
+		         ) A
+		    INNER JOIN
+		    		 (
+		        			SELECT M.UNIV_CD, M.YEAR, M.TERM_CD, M.SUBJECT_CD, M.SUBJECT_DIV_CD, MAX(M.CLASS_NUM) AS CNT
+		               FROM V_CHUL_VW_SUBJECT M
+		              WHERE (M.UNIV_CD, M.YEAR, M.TERM_CD)
+		                 IN (
+		                      SELECT UNIV_CD, YEAR, TERM_CD
+		                        FROM CUR_TERM
+		                     )
+		              GROUP BY M.UNIV_CD, M.YEAR, M.TERM_CD, M.SUBJECT_CD, M.SUBJECT_DIV_CD
+		      	) CLS
+		      ON CLS.UNIV_CD = A.UNIV_CD
+		     AND CLS.YEAR = A.YEAR
+		     AND CLS.TERM_CD = A.TERM_CD
+		     AND CLS.SUBJECT_CD = A.SUBJECT_CD
+		     AND CLS.SUBJECT_DIV_CD = A.SUBJECT_DIV_CD
+			) B
+		 INNER JOIN CHUL_TB_CLASS_EVAL_RATE ER
+		    ON ER.UNIV_CD = B.UNIV_CD
+		   AND ER.YEAR = B.YEAR
+		   AND ER.TERM_CD = B.TERM_CD
+		   AND ER.SUBJECT_CD = B.SUBJECT_CD
+		   AND ER.SUBJECT_DIV_CD = B.SUBJECT_DIV_CD
+	</select>
+
+</mapper>

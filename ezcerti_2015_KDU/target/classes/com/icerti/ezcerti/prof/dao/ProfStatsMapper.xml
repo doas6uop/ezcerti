@@ -1,0 +1,740 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.icerti.ezcerti.prof.dao.ProfStatsMapper">
+
+<!-- 2014.12.30
+	- CHUL_TB_ATTENDMASTER를 V_CHUL_VW_ATTENDMASTER로 변경
+-->
+<select id="getAttendmaster" resultType="com.icerti.ezcerti.domain.Attendmaster">
+SELECT B.CODE_NAME AS CLASS_PROG_NAME,
+	   C.CODE_NAME AS CLASS_TYPE_NAME, 
+	   D.CODE_NAME AS CLASS_STS_NAME,
+	   E.CODE_NAME AS CERT_STS_NAME, 
+	   F.CODE_NAME AS ATTEND_AUTH_NAME,  
+	   A.*
+FROM
+	(SELECT * 
+	FROM 
+		<!-- CHUL_TB_ATTENDMASTER -->
+		V_CHUL_VW_ATTENDMASTER
+	WHERE subject_cd=#{subject_cd}
+	AND subject_div_cd=#{subject_div_cd}
+	AND to_char(classday, 'YYYY-MM-DD')=#{classday}
+	AND CLASSHOUR_START_TIME=#{classhour_start_time}) A, CHUL_TB_CODEMASTER B, CHUL_TB_CODEMASTER C, CHUL_TB_CODEMASTER D, CHUL_TB_CODEMASTER E, CHUL_TB_CODEMASTER F
+WHERE A.CLASS_PROG_CD=B.CODE
+AND A.CLASS_TYPE_CD=C.CODE
+AND A.CLASS_STS_CD=D.CODE
+AND A.CERT_STS_CD=E.CODE
+AND A.ATTEND_AUTH_CD=F.CODE
+</select>
+
+<!-- 2014.12.30
+	- CHUL_TB_ATTENDMASTER를 V_CHUL_VW_ATTENDMASTER로 변경
+	- CHUL_TB_PROF를 V_CHUL_VW_PROF로 변경
+-->
+<select id="getProfStats" resultType="map">
+<![CDATA[
+SELECT a.prof_no, a.prof_name, 
+		e.coll_name as prof_coll_name, e.dept_name as prof_dept_name, 
+		all_class, off_class, add_class, per_present, per_late, per_absent,
+		e.prof_adm_name, per_etc
+FROM
+  	(SELECT prof_no, prof_name, count(*) as all_class
+  	FROM V_CHUL_VW_attendmaster
+	  WHERE univ_cd=#{univ_cd}
+		  AND year=#{year}
+		  AND term_cd=#{term_cd}
+		  AND prof_no=#{prof_no}
+		  AND class_type_cd <> 'G019C002'
+	  GROUP BY prof_no, prof_name) a,
+	  (SELECT prof_no, count(*) AS off_class
+	  FROM V_CHUL_VW_attendmaster
+	  WHERE univ_cd=#{univ_cd}
+		  AND year=#{year}
+		  AND term_cd=#{term_cd}
+		  AND prof_no=#{prof_no}
+		  AND class_type_cd='G019C002'
+	  GROUP by prof_no) b,
+	  (SELECT prof_no, count(*)AS add_class
+	  FROM V_CHUL_VW_attendmaster
+	  WHERE univ_cd=#{univ_cd}
+		  AND year=#{year}
+		  AND term_cd=#{term_cd}
+		  AND prof_no=#{prof_no}
+		  AND class_type_cd='G019C003'
+	  GROUP BY prof_no) c,
+	  (SELECT prof_no,
+	          SUM(attendee_cnt) AS attendee_cnt,
+		        TRUNC(NVL(SUM(attend_present_cnt)/DECODE(SUM(attendee_cnt), 0, NULL, SUM(attendee_cnt)), 0),4)*100 AS per_present,
+			      TRUNC(NVL(SUM(attend_late_cnt)/DECODE(SUM(attendee_cnt), 0, NULL, SUM(attendee_cnt)), 0),4)*100 AS per_late,
+			      TRUNC(NVL(SUM(attend_absent_cnt)/DECODE(SUM(attendee_cnt), 0, NULL, SUM(attendee_cnt)), 0),4)*100 AS per_absent, 
+			      TRUNC(NVL((SUM(attend_off_cnt)+SUM(attend_quit_cnt))/DECODE(SUM(attendee_cnt),0 , NULL, SUM(attendee_cnt)), 0),4)*100 AS per_etc
+	  FROM V_CHUL_VW_attendmaster
+	  WHERE univ_cd=#{univ_cd}
+		  AND year=#{year}
+		  AND term_cd=#{term_cd}
+		  AND prof_no=#{prof_no}      
+		  AND class_type_cd <> 'G019C002'
+		  AND class_sts_cd='G020C003'
+		  AND attendee_cnt <> 0 
+	  GROUP BY prof_no) d,
+	  (SELECT c1.code_name AS prof_adm_name, p.coll_name, p.dept_name
+	  FROM V_CHUL_VW_prof p, 
+	  	CHUL_TB_codemaster c1 
+	  WHERE univ_cd=#{univ_cd}
+	  AND prof_no=#{prof_no}
+	  AND p.prof_adm_cd=c1.code) e
+WHERE a.prof_no=b.prof_no(+)
+AND a.prof_no=c.prof_no(+)
+AND a.prof_no=d.prof_no(+)
+ORDER BY prof_name ASC
+]]>
+</select>
+
+<!-- 2014.12.30
+	- CHUL_TB_ATTENDMASTER를 V_CHUL_VW_ATTENDMASTER로 변경
+-->
+<select id="getProfStatsTerm" resultType="map">
+<![CDATA[
+SELECT ROWNUM,  am.*
+FROM	
+		(SELECT a.class_name, a.attendee_cnt, a.prof_no, a.subject_cd, a.subject_div_cd, a.prof_name, 
+				all_class, off_class, add_class, attend_off_cnt, 
+				attend_quit_cnt, per_present, per_late, per_absent, per_etc
+		FROM
+		  	(SELECT 
+		  		class_name, prof_no, subject_cd, 
+		  		subject_div_cd, prof_name,
+				(SELECT count(*) FROM v_chul_vw_attendee 
+					WHERE univ_cd=#{univ_cd}
+						AND year=#{year}
+						AND term_cd=#{term_cd}
+						AND subject_cd = am.subject_cd AND subject_div_cd = am.subject_div_cd
+				) AS attendee_cnt,
+				(SELECT count(*) FROM v_chul_vw_student where student_no in
+					(SELECT student_no FROM v_chul_vw_attendee 
+						WHERE univ_cd=#{univ_cd}
+							AND year=#{year}
+							AND term_cd=#{term_cd}
+							AND subject_cd = am.subject_cd AND subject_div_cd = am.subject_div_cd
+					)
+					AND student_sts_cd = 'G012C002'
+				) AS attend_off_cnt,
+				(SELECT count(*) FROM v_chul_vw_student where student_no in
+					(SELECT student_no FROM v_chul_vw_attendee 
+						WHERE univ_cd=#{univ_cd}
+							AND year=#{year}
+							AND term_cd=#{term_cd}
+							AND subject_cd = am.subject_cd AND subject_div_cd = am.subject_div_cd
+					)
+					AND student_sts_cd = 'G012C005'
+				) AS attend_quit_cnt,
+		  		count(*) as all_class
+		  	FROM V_CHUL_VW_attendmaster am
+			  WHERE univ_cd=#{univ_cd}
+				  AND year=#{year}
+				  AND term_cd=#{term_cd}
+				  AND prof_no=#{prof_no}
+				  AND class_type_cd <> 'G019C002'
+			  GROUP BY class_name, prof_no, subject_cd, subject_div_cd, prof_name) a,
+			  (SELECT prof_no, subject_cd, subject_div_cd, count(*) AS off_class
+			  FROM V_CHUL_VW_attendmaster
+			  WHERE univ_cd=#{univ_cd}
+				  AND year=#{year}
+				  AND term_cd=#{term_cd}
+				  AND prof_no=#{prof_no}
+				  AND class_type_cd='G019C002'
+			  GROUP by prof_no, subject_cd, subject_div_cd) b,
+			  (SELECT prof_no, subject_cd, subject_div_cd, count(*)AS add_class
+			  FROM V_CHUL_VW_attendmaster
+			  WHERE univ_cd=#{univ_cd}
+				  AND year=#{year}
+				  AND term_cd=#{term_cd}
+				  AND prof_no=#{prof_no}
+				  AND class_type_cd='G019C003'
+			  GROUP BY prof_no, subject_cd, subject_div_cd) c,
+			  (SELECT prof_no, subject_cd, subject_div_cd,
+			          SUM(attendee_cnt) AS attendee_cnt,
+				        TRUNC(NVL(SUM(attend_present_cnt)/DECODE(SUM(attendee_cnt), 0, NULL, SUM(attendee_cnt)), 0),4)*100 AS per_present,
+					      TRUNC(NVL(SUM(attend_late_cnt)/DECODE(SUM(attendee_cnt), 0, NULL, SUM(attendee_cnt)), 0),4)*100 AS per_late,
+					      TRUNC(NVL(SUM(attend_absent_cnt)/DECODE(SUM(attendee_cnt), 0, NULL, SUM(attendee_cnt)), 0),4)*100 AS per_absent, 
+					      TRUNC(NVL((SUM(attend_off_cnt)+SUM(attend_quit_cnt))/DECODE(SUM(attendee_cnt),0 , NULL, SUM(attendee_cnt)), 0),4)*100 AS per_etc
+			  FROM V_CHUL_VW_attendmaster
+			  WHERE univ_cd=#{univ_cd}
+				  AND year=#{year}
+				  AND term_cd=#{term_cd}
+				  AND prof_no=#{prof_no}      
+				  AND class_type_cd <> 'G019C002'
+				  AND class_sts_cd='G020C003'
+				  AND attendee_cnt <> 0 
+			  GROUP BY prof_no, subject_cd, subject_div_cd) d
+		WHERE a.subject_cd=b.subject_cd(+)
+		AND a.subject_div_cd=b.subject_div_cd(+)
+		AND a.subject_cd=c.subject_cd(+)
+		AND a.subject_div_cd=c.subject_div_cd(+)
+		AND a.subject_cd=d.subject_cd(+)
+		AND a.subject_div_cd=d.subject_div_cd(+)
+		ORDER BY subject_cd, subject_div_cd) am
+]]>
+</select>
+
+<!-- 2014.12.30
+	- CHUL_TB_ATTENDMASTER를 V_CHUL_VW_ATTENDMASTER로 변경
+-->
+<select id="getProfStatsTermExcel" resultType="map">
+<!-- 
+SELECT ROWNUM, am.*
+FROM	
+	(SELECT a.prof_no, a.class_cd, a.prof_name, a.prof_coll_name, a.prof_dept_name, 
+				 e.subject_cd, e.subject_div_cd, e.classday_name, e.classhour_start_time, e.classhour_end_time, 
+				 e.class_name, e.attendee_cnt, all_class, off_class, add_class, 
+				 attend_off_cnt, attend_quit_cnt, per_present, per_late, per_absent, 
+				 per_etc
+	FROM
+	  	(SELECT prof_no, class_cd, prof_name, prof_coll_name, prof_dept_name, attend_off_cnt, attend_quit_cnt, count(*) as all_class
+	  	FROM CHUL_TB_attendmaster
+		  WHERE univ_cd=#{univ_cd}
+		  AND term_cd=#{term_cd}
+		  AND prof_no=#{prof_no}
+		  GROUP BY prof_no, class_cd, prof_name, prof_coll_name, prof_dept_name, attend_off_cnt, attend_quit_cnt) a,
+		  (SELECT prof_no, class_cd, count(*) AS off_class
+		  FROM CHUL_TB_attendmaster
+		  WHERE univ_cd=#{univ_cd}
+		  AND term_cd=#{term_cd}
+		  AND prof_no=#{prof_no}
+		  AND class_type_cd='G019C002'
+		  GROUP by prof_no, class_cd) b,
+		  (SELECT prof_no, class_cd, count(*)AS add_class
+		  FROM CHUL_TB_attendmaster
+		  WHERE univ_cd=#{univ_cd}
+		  AND term_cd=#{term_cd}
+		  AND prof_no=#{prof_no}
+		  AND class_type_cd='G019C003'
+		  GROUP BY prof_no, class_cd) c,
+		  (SELECT prof_no, class_cd,
+		          SUM(attendee_cnt) AS attendee_cnt,
+			        TRUNC(NVL(SUM(attend_present_cnt)/DECODE(SUM(attendee_cnt), 0, NULL, SUM(attendee_cnt)), 0),4)*100 AS per_present,
+				      TRUNC(NVL(SUM(attend_late_cnt)/DECODE(SUM(attendee_cnt), 0, NULL, SUM(attendee_cnt)), 0),4)*100 AS per_late,
+				      TRUNC(NVL(SUM(attend_absent_cnt)/DECODE(SUM(attendee_cnt), 0, NULL, SUM(attendee_cnt)), 0),4)*100 AS per_absent, 
+				      TRUNC(NVL((SUM(attend_off_cnt)+SUM(attend_quit_cnt))/DECODE(SUM(attendee_cnt),0 , NULL, SUM(attendee_cnt)), 0),4)*100 AS per_etc
+		  FROM CHUL_TB_attendmaster
+		  WHERE univ_cd=#{univ_cd}
+		  AND term_cd=#{term_cd}
+		  AND prof_no=#{prof_no}      
+		  AND class_type_cd <> 'G019C002'
+		  AND class_sts_cd='G020C003'
+		  AND attendee_cnt <> 0 
+		  GROUP BY prof_no, class_cd) d,
+		  CHUL_TB_class e
+	WHERE a.class_cd=b.class_cd(+)
+	AND a.class_cd=c.class_cd(+)
+	AND a.class_cd=d.class_cd(+)
+	AND a.class_cd=e.class_cd
+	ORDER BY e.classday_no ASC, e.classhour_start_time) am
+-->
+<![CDATA[
+SELECT ROWNUM,  am.*
+FROM	
+		(SELECT a.class_name, a.attendee_cnt, a.prof_no, a.subject_cd, a.subject_div_cd, a.prof_name, a.prof_coll_name, 
+						a.prof_dept_name, all_class, off_class, add_class, attend_off_cnt, 
+						attend_quit_cnt, per_present, per_late, per_absent, per_etc
+		FROM
+		  	(SELECT 
+		  		class_name, prof_no, subject_cd, 
+		  		subject_div_cd, prof_name, prof_coll_name, prof_dept_name,
+				(SELECT count(*) FROM v_chul_vw_attendee 
+					WHERE univ_cd=#{univ_cd}
+						AND year=#{year}
+						AND term_cd=#{term_cd}
+						AND subject_cd = am.subject_cd AND subject_div_cd = am.subject_div_cd
+				) AS attendee_cnt,		  		
+				(SELECT count(*) FROM v_chul_vw_student where student_no in
+					(SELECT student_no FROM v_chul_vw_attendee 
+						WHERE univ_cd=#{univ_cd}
+							AND year=#{year}
+							AND term_cd=#{term_cd}
+							AND subject_cd = am.subject_cd AND subject_div_cd = am.subject_div_cd
+					)
+					AND student_sts_cd = 'G012C002'
+				) AS attend_off_cnt,
+				(SELECT count(*) FROM v_chul_vw_student where student_no in
+					(SELECT student_no FROM v_chul_vw_attendee 
+						WHERE univ_cd=#{univ_cd}
+							AND year=#{year}
+							AND term_cd=#{term_cd}
+							AND subject_cd = am.subject_cd AND subject_div_cd = am.subject_div_cd
+					)
+					AND student_sts_cd = 'G012C005'
+				) AS attend_quit_cnt,
+		  		count(*) as all_class
+		  	FROM 
+		  		-- CHUL_TB_attendmaster 
+		  		V_CHUL_VW_attendmaster am
+			  WHERE univ_cd=#{univ_cd}
+				  AND year=#{year}
+				  AND term_cd=#{term_cd}
+				  AND prof_no=#{prof_no}
+			  GROUP BY class_name, prof_no, subject_cd, subject_div_cd, prof_name, prof_coll_name, prof_dept_name) a,
+			  (SELECT prof_no, subject_cd, subject_div_cd, count(*) AS off_class
+			  FROM 
+			  	-- CHUL_TB_attendmaster 
+			  	V_CHUL_VW_attendmaster
+			  WHERE univ_cd=#{univ_cd}
+				  AND year=#{year}
+				  AND term_cd=#{term_cd}
+				  AND prof_no=#{prof_no}
+				  AND class_type_cd='G019C002'
+			  GROUP by prof_no, subject_cd, subject_div_cd) b,
+			  (SELECT prof_no, subject_cd, subject_div_cd, count(*)AS add_class
+			  FROM 
+			  	-- CHUL_TB_attendmaster 
+			  	V_CHUL_VW_attendmaster
+			  WHERE univ_cd=#{univ_cd}
+				  AND year=#{year}
+				  AND term_cd=#{term_cd}
+				  AND prof_no=#{prof_no}
+				  AND class_type_cd='G019C003'
+			  GROUP BY prof_no, subject_cd, subject_div_cd) c,
+			  (SELECT prof_no, subject_cd, subject_div_cd,
+			          SUM(attendee_cnt) AS attendee_cnt,
+				        TRUNC(NVL(SUM(attend_present_cnt)/DECODE(SUM(attendee_cnt), 0, NULL, SUM(attendee_cnt)), 0),4)*100 AS per_present,
+					      TRUNC(NVL(SUM(attend_late_cnt)/DECODE(SUM(attendee_cnt), 0, NULL, SUM(attendee_cnt)), 0),4)*100 AS per_late,
+					      TRUNC(NVL(SUM(attend_absent_cnt)/DECODE(SUM(attendee_cnt), 0, NULL, SUM(attendee_cnt)), 0),4)*100 AS per_absent, 
+					      TRUNC(NVL((SUM(attend_off_cnt)+SUM(attend_quit_cnt))/DECODE(SUM(attendee_cnt),0 , NULL, SUM(attendee_cnt)), 0),4)*100 AS per_etc
+			  FROM 
+			  	-- CHUL_TB_attendmaster 
+			  	V_CHUL_VW_attendmaster
+			  WHERE univ_cd=#{univ_cd}
+				  AND year=#{year}
+				  AND term_cd=#{term_cd}
+				  AND prof_no=#{prof_no}      
+				  AND class_type_cd <> 'G019C002'
+				  AND class_sts_cd='G020C003'
+				  AND attendee_cnt <> 0 
+			  GROUP BY prof_no, subject_cd, subject_div_cd) d
+		WHERE a.subject_cd=b.subject_cd(+)
+		AND a.subject_div_cd=b.subject_div_cd(+)
+		AND a.subject_cd=c.subject_cd(+)
+		AND a.subject_div_cd=c.subject_div_cd(+)
+		AND a.subject_cd=d.subject_cd(+)
+		AND a.subject_div_cd=d.subject_div_cd(+)
+		ORDER BY subject_cd, subject_div_cd) am
+]]>
+</select>
+
+<!-- 2014.12.30
+	- CHUL_TB_ATTENDMASTER를 V_CHUL_VW_ATTENDMASTER로 변경
+-->
+<select id="getProfStatsTermEnd" resultType="com.icerti.ezcerti.domain.Attendmaster">
+
+	SELECT ROWNUM AS row_no, c1.code_name AS class_sts_name, c2.code_name AS class_type_name, am1.*
+	FROM
+		(SELECT 1 AS reg_etc, am1.class_cd, am1.subject_cd, am1.subject_div_cd, am1.classday_name, am1.classhour_start_time, am1.classhour_end_time, am1.class_name, am1.attendee_cnt, am1.classday, am1.class_sts_cd, am1.class_type_cd
+		FROM 
+			V_CHUL_VW_attendmaster am1
+		WHERE univ_cd=#{univ_cd}
+		AND year=#{year}
+		AND term_cd=#{term_cd}
+		AND prof_no=#{prof_no}
+		AND class_type_cd <![CDATA[ <> ]]> 'G019C002'
+		AND attendee_cnt!=attend_present_cnt+attend_late_cnt+attend_absent_cnt+attend_quit_cnt+attend_off_cnt
+		ORDER BY class_cd, classday) am1, CHUL_TB_codemaster c1, CHUL_TB_codemaster c2
+	WHERE am1.class_sts_cd=c1.code
+	AND am1.class_type_cd=c2.code
+		UNION
+	SELECT ROWNUM AS row_no,c1.code_name AS class_sts_name, c2.code_name AS class_type_name, am2.*
+	FROM	
+		(SELECT 2 AS reg_etc, am2.class_cd, am2.subject_cd, am2.subject_div_cd, am2.classday_name, am2.classhour_start_time, am2.classhour_end_time, am2.class_name, am2.attendee_cnt, am2.classday, am2.class_sts_cd, am2.class_type_cd
+		FROM 
+			V_CHUL_VW_attendmaster am2
+		WHERE univ_cd=#{univ_cd}
+		AND year=#{year}
+		AND term_cd=#{term_cd}
+		AND prof_no=#{prof_no}
+		AND class_type_cd <![CDATA[ <> ]]> 'G019C002'
+		AND attendee_cnt=attend_absent_cnt+attend_quit_cnt+attend_off_cnt
+		AND attendee_cnt != '1'
+		
+		<!-- 학교측 요청으로 주석 처리 -->
+		<!-- AND (cert_type is null OR cert_type = '') -->
+		
+		ORDER BY class_cd, classday) am2, CHUL_TB_codemaster c1, CHUL_TB_codemaster c2
+	WHERE am2.class_sts_cd=c1.code
+	AND am2.class_type_cd=c2.code
+</select>
+
+<!-- 2014.12.30
+	- CHUL_TB_ATTENDMASTER를 V_CHUL_VW_ATTENDMASTER로 변경
+-->
+<select id="getTermRemainClass" resultType="com.icerti.ezcerti.domain.Attendmaster">
+<![CDATA[
+SELECT *
+FROM 
+	-- CHUL_TB_attendmaster 
+	V_CHUL_VW_attendmaster
+WHERE univ_cd=#{univ_cd}
+AND year=#{year}
+AND term_cd=#{term_cd}
+AND prof_no=#{prof_no}
+AND class_sts_cd <> 'G020C003'
+]]>
+</select>
+
+<!-- 2014.12.30
+	- 교수 관리코드 사용여부 관려해서는 학사정보 확인 후 처리
+	- CHUL_TB_prof를 CHUL_TB_userinfo로 변경 (교수의 관리코드는 CHUL_TB_userinfo에서 관리하기로 함)
+-->
+<update id="updateProfStatsTermEnd">
+UPDATE CHUL_TB_USERINFO
+	<set>
+		<if test="prof_adm_cd != null">
+			<if test='prof_adm_cd.equals("G026C002")'>ADM_CD='G026C001'</if>
+			<if test='prof_adm_cd.equals("G026C001")'>ADM_CD='G026C002'</if>
+		</if>
+	</set>
+	WHERE UNIV_CD = #{univ_cd}
+		AND USER_NO = #{prof_no}
+		AND ADM_CD = #{prof_adm_cd}
+</update>
+
+<!-- 2014.12.30
+	- 강의 관리코드 사용여부 관려해서는 학사정보 확인 후 처리
+-->
+<update id="updateProfStatsTermEndClass">
+UPDATE 
+	CHUL_TB_attendmaster_addinfo
+	<set>
+		<if test="prof_adm_cd != null">
+			<if test='prof_adm_cd.equals("G026C002")'>class_adm_cd='G027C001'</if>
+			<if test='prof_adm_cd.equals("G026C001")'>class_adm_cd='G027C002'</if>
+		</if>
+	</set>
+WHERE univ_cd=#{univ_cd}
+	AND year=#{year}
+	AND term_cd=#{term_cd}
+	AND prof_no=#{prof_no}
+	<if test="prof_adm_cd != null">
+		<if test='prof_adm_cd.equals("G026C001")'>AND class_adm_cd='G027C001'</if>
+		<if test='prof_adm_cd.equals("G026C002")'>AND class_adm_cd='G027C002'</if>
+	</if>
+</update>
+
+<!-- 2014.12.30
+	- CHUL_TB_ATTENDMASTER를 V_CHUL_VW_ATTENDMASTER로 변경
+-->
+<select id="getProfStatsDaily" resultType="com.icerti.ezcerti.domain.Attendmaster">
+<![CDATA[
+SELECT ROWNUM AS row_no, 
+			 c1.code_name AS class_sts_name, 
+			 c2.code_name AS class_type_name,
+			 am.*
+FROM
+	(SELECT *
+	FROM 
+		-- CHUL_TB_attendmaster 
+		V_CHUL_VW_attendmaster
+	WHERE univ_cd=#{univ_cd}
+	AND year=#{year}
+	AND term_cd=#{term_cd}
+	AND prof_no=#{prof_no}
+	AND subject_cd=#{subject_cd}
+	AND subject_div_cd=#{subject_div_cd}
+	ORDER BY classday, classhour_start_time) am, CHUL_TB_codemaster c1, CHUL_TB_codemaster c2
+WHERE am.class_sts_cd=c1.code
+AND am.class_type_cd=c2.code
+]]>
+</select>
+
+<!-- 2014.12.30
+	- CHUL_TB_ATTENDMASTER를 V_CHUL_VW_ATTENDMASTER로 변경
+-->
+<select id="getProfStatsDailyExcel" resultType="map">
+<![CDATA[
+SELECT ROWNUM AS row_no, 
+			 c1.code_name AS class_sts_name, 
+			 c2.code_name AS class_type_name,
+			 am.*
+FROM
+	(SELECT *
+	FROM 
+		-- CHUL_TB_attendmaster 
+		V_CHUL_VW_attendmaster
+	WHERE univ_cd=#{univ_cd}
+	AND term_cd=#{term_cd}
+	AND prof_no=#{prof_no}
+	AND subject_cd=#{subject_cd}
+	AND subject_div_cd=#{subject_div_cd}
+	ORDER BY classday, classhour_start_time) am, CHUL_TB_codemaster c1, CHUL_TB_codemaster c2
+WHERE am.class_sts_cd=c1.code
+AND am.class_type_cd=c2.code
+]]>
+</select>
+
+<!-- 2014.12.30
+	- CHUL_TB_ATTENDMASTER를 V_CHUL_VW_ATTENDMASTER로 변경
+-->
+<select id="getProfStatsDailyLecture" resultType="Map">
+<![CDATA[
+SELECT prof_no, class_name, prof_name, subject_cd, subject_div_cd, 
+			 attendee_cnt, attend_off_cnt, attend_quit_cnt, 100-(per_present+per_late+per_absent+per_etc) AS per_before, per_present, 
+			 per_late, per_absent, per_etc, cday
+FROM
+    (SELECT prof_no, class_name, prof_name, subject_cd, subject_div_cd, 
+    				attendee_cnt, attend_off_cnt, attend_quit_cnt,
+    				COUNT(classday) AS cday,
+            TRUNC(NVL(SUM(attend_present_cnt)/DECODE(SUM(attendee_cnt), 0, NULL, SUM(attendee_cnt)), 0),3)*100 AS per_present,
+            TRUNC(NVL(SUM(attend_late_cnt)/DECODE(SUM(attendee_cnt), 0, NULL, SUM(attendee_cnt)), 0),3)*100 AS per_late,
+            TRUNC(NVL(SUM(attend_absent_cnt)/DECODE(SUM(attendee_cnt), 0, NULL, SUM(attendee_cnt)), 0),3)*100 AS per_absent, 
+            TRUNC(NVL((SUM(attend_off_cnt)+SUM(attend_quit_cnt))/DECODE(SUM(attendee_cnt),0 , NULL, SUM(attendee_cnt)), 0),3)*100 AS per_etc
+	FROM 
+		-- CHUL_TB_attendmaster 
+		V_CHUL_VW_attendmaster
+    WHERE univ_cd=#{univ_cd}
+    AND year=#{year}
+    AND term_cd=#{term_cd}
+    AND prof_no=#{prof_no}
+    AND subject_cd=#{subject_cd}
+    AND subject_div_cd=#{subject_div_cd}
+    AND class_sts_cd='G020C003'
+    AND class_type_cd <> 'G019C002'
+    GROUP BY prof_no, class_name, prof_name, subject_cd, subject_div_cd, attendee_cnt, attend_off_cnt, attend_quit_cnt)
+WHERE ROWNUM=1    
+]]>    
+</select>
+
+<!-- 2015.01.07
+ 	- CHUL_TB_attenddethist를 CHUL_TB_ATTENDDETHIST와 V_CHUL_VW_ATTENDEE JOIN으로 변경
+-->
+<select id="getProfStatsDailyAttendee" resultType="map">
+<!-- 
+<![CDATA[
+SELECT ROWNUM AS row_no, s.*
+FROM 
+	(SELECT attend_before,
+				 attend_present,
+				 attend_late,
+				 attend_absent,
+				 c1.code_name AS attend_sts_name, 
+				 c2.code_name AS student_sts_name, 
+				 adh.*
+	FROM
+		(SELECT *
+		FROM CHUL_TB_attenddethist
+		WHERE univ_cd=#{univ_cd}
+		AND term_cd=#{term_cd}
+		AND prof_no=#{prof_no}
+		AND subject_cd=#{subject_cd}
+		AND subject_div_cd=#{subject_div_cd}
+		AND classday=#{classday}
+		AND classhour_start_time=#{classhour_start_time}) adh, 
+		(SELECT student_no, term_cd,
+	          COUNT(DECODE(attend_sts_cd, 'G023C001', '1')) AS attend_before,
+	          COUNT(DECODE(attend_sts_cd, 'G023C002', '1')) AS attend_present,
+	          COUNT(DECODE(attend_sts_cd, 'G023C003', '1')) AS attend_late,
+	          COUNT(DECODE(attend_sts_cd, 'G023C004', '1')) AS attend_absent
+		FROM CHUL_TB_attenddethist
+		WHERE univ_cd=#{univ_cd}
+		AND term_cd=#{term_cd}
+		AND prof_no=#{prof_no}
+		AND subject_cd=#{subject_cd}
+		AND subject_div_cd=#{subject_div_cd}
+		AND class_type_cd <> 'G019C002'
+		GROUP BY student_no, term_cd) attend, CHUL_TB_codemaster c1, CHUL_TB_codemaster c2, CHUL_TB_student s
+	WHERE adh.attend_sts_cd=c1.code
+	AND adh.student_no=s.student_no
+	AND adh.term_cd=s.term_cd
+	AND s.student_sts_cd=c2.code
+	AND adh.student_no=attend.student_no
+	AND adh.term_cd=attend.term_cd
+	ORDER BY s.student_no) s
+]]>
+-->
+<![CDATA[
+SELECT ROWNUM AS ROW_NO, S.*
+FROM 
+    (SELECT ATTEND_BEFORE,
+                 ATTEND_PRESENT,
+                 ATTEND_LATE,
+                 ATTEND_ABSENT,
+                 C1.CODE_NAME AS ATTEND_STS_NAME, 
+                 C2.CODE_NAME AS STUDENT_STS_NAME, 
+                 ADH.*
+    FROM
+        (
+            SELECT
+                AD.UNIV_CD, AD.YEAR, AD.TERM_CD, AD.SUBJECT_CD, AD.SUBJECT_DIV_CD, AD.STUDENT_NO
+                , A.PROF_NO, A.CLASS_CD, A.CLASSDAY
+                , A.STUDENT_NAME, A.STUDENT_COLL_NAME, A.STUDENT_DEPT_NAME
+                , A.CLASSHOUR_START_TIME, A.CLASSHOUR_END_TIME
+                , A.CLASS_TYPE_CD, A.ATTEND_STS_CD, A.ATTEND_AUTH_CD
+                , A.ATTEND_AUTH_REASON_CD              
+            FROM (
+                SELECT
+                    * 
+                FROM CHUL_TB_ATTENDDETHIST
+                WHERE UNIV_CD = #{univ_cd}
+                    AND YEAR = #{year}
+                    AND TERM_CD = #{term_cd}
+                    AND PROF_NO = #{prof_no}
+                    AND SUBJECT_CD = #{subject_cd}
+                    AND SUBJECT_DIV_CD = #{subject_div_cd}
+                    AND to_char(classday, 'YYYY-MM-DD') = #{classday}
+                    AND CLASSHOUR_START_TIME = #{classhour_start_time}
+            ) A, V_CHUL_VW_ATTENDEE AD
+            WHERE 1=1
+                AND AD.UNIV_CD = #{univ_cd}
+                AND AD.YEAR = #{year}
+                AND AD.TERM_CD = #{term_cd}
+                AND AD.SUBJECT_CD = #{subject_cd}
+                AND AD.SUBJECT_DIV_CD = #{subject_div_cd}
+                AND AD.STUDENT_NO = A.STUDENT_NO(+)    
+        ) ADH, 
+        (
+            SELECT
+                AD.STUDENT_NO, AD.TERM_CD,
+                NVL(A.ATTEND_BEFORE, 0) AS ATTEND_BEFORE, 
+                NVL(A.ATTEND_PRESENT, 0) AS ATTEND_PRESENT, 
+                NVL(A.ATTEND_LATE, 0) AS ATTEND_LATE, 
+                NVL(A.ATTEND_ABSENT, 0) AS ATTEND_ABSENT
+            FROM (
+                SELECT 
+                    STUDENT_NO, TERM_CD,
+                    COUNT(DECODE(ATTEND_STS_CD, 'G023C001', '1')) AS ATTEND_BEFORE,
+                    COUNT(DECODE(ATTEND_STS_CD, 'G023C002', '1')) AS ATTEND_PRESENT,
+                    COUNT(DECODE(ATTEND_STS_CD, 'G023C003', '1')) AS ATTEND_LATE,
+                    COUNT(DECODE(ATTEND_STS_CD, 'G023C004', '1')) AS ATTEND_ABSENT
+                FROM CHUL_TB_ATTENDDETHIST
+                WHERE UNIV_CD = #{univ_cd}
+                    AND YEAR = #{year}
+                    AND TERM_CD = #{term_cd}
+                    AND PROF_NO = #{prof_no}
+                    AND SUBJECT_CD = #{subject_cd} 
+                    AND SUBJECT_DIV_CD = #{subject_div_cd}
+                    AND CLASS_TYPE_CD <>  'G019C002'
+                GROUP BY STUDENT_NO, TERM_CD
+            ) A, V_CHUL_VW_ATTENDEE AD
+            WHERE 1=1
+                AND AD.UNIV_CD = #{univ_cd}
+                AND AD.YEAR = #{year}
+                AND AD.TERM_CD = #{term_cd}
+                AND AD.SUBJECT_CD = #{subject_cd}
+                AND AD.SUBJECT_DIV_CD = #{subject_div_cd}
+                AND AD.STUDENT_NO = A.STUDENT_NO(+)                
+        ) ATTEND, 
+            CHUL_TB_CODEMASTER C1, 
+            CHUL_TB_CODEMASTER C2, 
+            V_CHUL_VW_STUDENT S
+    WHERE ADH.ATTEND_STS_CD=C1.CODE(+)
+    AND ADH.STUDENT_NO=S.STUDENT_NO(+)
+    --AND ADH.TERM_CD=S.TERM_CD
+    AND S.STUDENT_STS_CD=C2.CODE
+    AND ADH.STUDENT_NO=ATTEND.STUDENT_NO(+)
+    AND ADH.TERM_CD=ATTEND.TERM_CD
+    ORDER BY S.STUDENT_NO) S
+]]>
+</select>
+
+<select id="getProfStatsCheckClaim" resultType="int">
+<![CDATA[
+SELECT COUNT(*)
+FROM CHUL_TB_claim
+WHERE univ_cd=#{univ_cd}
+	AND year=#{year}
+	AND term_cd=#{term_cd}
+	AND prof_no=#{prof_no}
+	AND CLAIM_STS_CD <> 'G028C002'
+]]>
+</select>
+
+<!-- 2014.12.30
+	- CHUL_TB_ATTENDMASTER를 V_CHUL_VW_ATTENDMASTER로 변경
+-->
+<select id="getLectureClassday" resultType="com.icerti.ezcerti.domain.Attendmaster">
+SELECT classday
+FROM 
+	<!-- CHUL_TB_attendmaster -->
+	V_CHUL_VW_attendmaster
+WHERE univ_cd=#{univ_cd}
+	AND year=#{year}
+	AND term_cd=#{term_cd}
+	AND prof_no=#{prof_no}
+	AND subject_cd=#{subject_cd}
+	AND subject_div_cd=#{subject_div_cd}
+ORDER BY classday ASC
+</select>
+
+<select id="getStatsAttendeeExcel" resultType="map">
+<!-- 
+SELECT *
+FROM 
+  (SELECT student_no, classday, attend_sts_cd, classday_no, classhour_start_time
+  FROM CHUL_TB_attenddethist
+  WHERE prof_no=#{prof_no}
+  AND subject_cd=#{subject_cd}
+  AND subject_div_cd=#{subject_div_cd}
+  GROUP BY student_no, classday, attend_sts_cd, classday_no, classhour_start_time)
+PIVOT(MAX(attend_sts_cd) FOR classday IN(
+SELECT classday
+FROM CHUL_TB_attendmaster
+WHERE univ_cd=#{univ_cd}
+AND term_cd=#{term_cd}
+AND prof_no=#{prof_no}
+AND subject_cd=#{subject_cd}
+AND subject_div_cd=#{subject_div_cd}
+ORDER BY classday ASC
+))
+ORDER BY student_no
+-->
+<![CDATA[
+SELECT *
+FROM
+  (SELECT student_no,
+          SUM(DECODE(attend_sts_cd, 'G023C001', '1', '0')) AS before_cnt,
+          SUM(DECODE(attend_sts_cd, 'G023C002', '1', '0')) AS present_cnt,
+          SUM(DECODE(attend_sts_cd, 'G023C003', '1', '0')) AS late_cnt,
+          SUM(DECODE(attend_sts_cd, 'G023C004', '1', '0')) AS absent_cnt,
+          SUM(DECODE(attend_sts_cd, 'G023C005', '1', '0')) AS off_cnt,
+          SUM(DECODE(attend_sts_cd, 'G023C007', '1', '0')) AS quit_cnt
+  FROM CHUL_TB_attenddethist
+  WHERE univ_cd=#{univ_cd} 
+	  AND year=#{year}
+	  AND term_cd=#{term_cd}
+	  AND prof_no=#{prof_no}
+	  AND subject_cd=#{subject_cd}
+	  AND subject_div_cd=#{subject_div_cd}
+	  AND class_type_cd <> 'G019C002'
+  GROUP BY student_no) attend2,
+  (SELECT student_no, substr(xmlagg(xmlelement(a,',' || classday) order by classday, classhour_start_time).extract('//text()'), 2) cday,
+           substr(xmlagg(xmlelement(a,',' || attend_sts_cd) order by classday, classhour_start_time ).extract('//text()'), 2) attend_sts
+  FROM CHUL_TB_attenddethist
+  WHERE univ_cd=#{univ_cd}
+	  AND year=#{year}
+	  AND term_cd=#{term_cd} 
+	  AND prof_no=#{prof_no}
+	  AND subject_cd=#{subject_cd}
+	  AND subject_div_cd=#{subject_div_cd}
+  GROUP BY student_no) attend,
+  (SELECT student_no, student_name, student_dept_name, subject_cd, subject_div_cd
+  FROM CHUL_TB_attenddethist
+  WHERE univ_cd=#{univ_cd}
+	  AND year=#{year}
+	  AND term_cd=#{term_cd}
+	  AND prof_no=#{prof_no}
+	  AND subject_cd=#{subject_cd}
+	  AND subject_div_cd=#{subject_div_cd}
+  GROUP BY student_no, student_name, student_dept_name, subject_cd, subject_div_cd) s
+WHERE s.student_no=attend.student_no
+AND s.student_no=attend2.student_no
+ORDER BY s.student_no
+]]>
+</select>
+
+	<select id="executeRefreshEndProc" parameterType="String" resultType="map" statementType="CALLABLE"> 
+		{CALL CHUL_ENDED_CLASS_PROF( 	
+										#{prof_no}
+									  <!-- , #{OV_ERROR_CD, javaType=java.lang.String, jdbcType=VARCHAR, mode=OUT}
+									  , #{OV_ERROR_MSG, javaType=java.lang.String, jdbcType=VARCHAR, mode=OUT} -->
+			    					)}
+	</select>
+</mapper>

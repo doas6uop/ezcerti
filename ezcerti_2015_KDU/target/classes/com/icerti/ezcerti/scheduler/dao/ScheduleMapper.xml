@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.icerti.ezcerti.scheduler.dao.ScheduleMapper">
+	
+	<update id="copyDataProc">
+		call CHUL_SYNC_INITDATA_PROC()
+	</update>
+	
+	<update id="syncProc">
+		call CHUL_SYNC_CLASS_PROC()
+	</update>
+	
+	<select id="checkClassStatus">
+		call CHUL_CLASS_STATUS_CHECK()
+	</select>
+
+	<select id="checkConseClassAttend">
+		call CHUL_CONSE_CLASS_ATTEND_CHECK()
+	</select>
+	
+	<select id="endedClassAttendeeProc">
+		call CHUL_ENDED_CLASS_ATTENDEE_PROC()
+	</select>
+
+	<select id="gonggyulProc">
+		call CHUL_GONGGYUL_PROC('')
+	</select>
+
+	<select id="syncInitDataProc">
+		call CHUL_SYNC_INITDATA_PROC()
+	</select>
+
+	<select id="syncUserInfoProc">
+		call CHUL_SYNC_USER_PROC()
+	</select>
+
+	<select id="syncClassInfoProc">
+		call CHUL_SYNC_CLASS_PROC()
+	</select>
+	
+	<select id="syncHyuBogangInfoProc">
+		call CHUL_SYNC_HYUBOGANG_PROC()
+	</select>
+</mapper>

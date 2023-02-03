@@ -1,0 +1,284 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.icerti.ezcerti.common.board.dao.BoardMapper">
+
+	<resultMap type="com.icerti.ezcerti.domain.Board" id="getBoard">
+		<id property="board_no" column="board_no"/>
+		<result property="title" column="title"/>
+		<result property="contents" column="contents"/>
+		<result property="board_type" column="board_type"/>
+		<result property="view_cnt" column="view_cnt"/>
+		<result property="reg_user_no" column="reg_user_no"/>
+		<result property="reg_user_name" column="reg_user_name"/>
+		<result property="reg_date" column="reg_date"/>
+		<result property="cmmt_cnt" column="cmmt_cnt"/>
+	</resultMap>
+	
+	<resultMap type="com.icerti.ezcerti.domain.Comment" id="getComment">
+		<id property="cmmt_no" column="cmmt_no"/>
+		<result property="board_no" column="board_no"/>
+		<result property="cmmt" column="cmmt"/>
+		<result property="reg_user_no" column="reg_user_no"/>
+		<result property="reg_user_name" column="reg_user_name"/>
+		<result property="reg_date" column="reg_date"/>
+	</resultMap>
+
+	<resultMap type="com.icerti.ezcerti.domain.BoardFile" id="getBoardFile">
+		<id property="file_no" column="file_no"/>
+		<result property="board_no" column="board_no"/>
+		<result property="org_file_name" column="org_file_name"/>
+		<result property="saved_file_name" column="saved_file_name"/>
+		<result property="file_path" column="file_path"/>
+		<result property="reg_date" column="reg_date"/>
+	</resultMap>
+
+	<!-- 게시판 목록 수 -->
+	<select id="getBoardListCount" parameterType="map" resultType="int">
+	<![CDATA[	
+		SELECT 
+			COUNT(*)
+		FROM 
+			CHUL_TB_BOARD a
+			LEFT OUTER JOIN (	
+								SELECT *
+								FROM V_CHUL_VW_DEPT
+								WHERE UNIV_CD = #{univ_cd}
+								  AND YEAR = #{year}
+								  AND TERM_CD = #{term_cd}
+							) det
+			ON det.dept_cd = a.board_subtype
+			LEFT OUTER JOIN (	
+				SELECT 
+					subject_cd, subject_div_cd, class_name
+				FROM V_CHUL_VW_CLASS
+				WHERE UNIV_CD = #{univ_cd}
+				  AND YEAR = #{year}
+				  AND TERM_CD = #{term_cd}
+				GROUP BY subject_cd, subject_div_cd, class_name 
+			) cls
+			ON (cls.subject_cd || '||' || cls.subject_div_cd) = a.board_subtype
+		WHERE a.univ_cd = #{univ_cd}
+		  AND a.board_type = #{board_type}
+  	]]>
+		<if test='board_subtype != null and !board_subtype.equals("")'>
+			AND a.board_subtype = #{board_subtype}
+		</if>
+		<if test='!searchValue.equals("")'>
+			<choose>
+				<when test='searchItem.equals("name")'>
+				AND a.reg_user_name LIKE '%' || #{searchValue} || '%'
+				</when>
+				<when test='searchItem.equals("title")'>
+				AND a.title LIKE '%' || #{searchValue} || '%'
+				</when>
+				<when test='searchItem.equals("dept_name")'>
+				AND det.dept_name LIKE '%' || #{searchValue} || '%'
+				</when>				
+			</choose>
+		</if>
+	</select>
+
+	<!-- 게시판 목록 -->
+	<select id="getBoardList" parameterType="map" resultMap="getBoard">
+		SELECT a.* 
+			, (SELECT count(cmmt_no) FROM CHUL_TB_comment WHERE board_no = a.board_no) AS cmmt_cnt
+		FROM (
+			SELECT *
+			FROM (
+				SELECT ROWNUM row_no, a.* 
+				FROM ( 
+					SELECT
+	        		 	a.*, det.dept_name, cls.subject_cd, cls.subject_div_cd, cls.class_name as board_subtitle
+					FROM CHUL_TB_BOARD a
+						LEFT OUTER JOIN (	
+							SELECT *
+							FROM V_CHUL_VW_DEPT
+							WHERE UNIV_CD = #{univ_cd}
+							  AND YEAR = #{year}
+							  AND TERM_CD = #{term_cd}
+						) det
+						ON det.dept_cd = a.board_subtype
+						LEFT OUTER JOIN (	
+							SELECT 
+								subject_cd, subject_div_cd, class_name
+							FROM V_CHUL_VW_CLASS
+							WHERE UNIV_CD = #{univ_cd}
+							  AND YEAR = #{year}
+							  AND TERM_CD = #{term_cd}
+							GROUP BY subject_cd, subject_div_cd, class_name 
+						) cls
+						ON (cls.subject_cd || '||' || cls.subject_div_cd) = a.board_subtype						
+					WHERE a.univ_cd = #{univ_cd}
+						AND a.board_type = #{board_type}
+						<if test='board_subtype != null and !board_subtype.equals("")'>
+							AND a.board_subtype = #{board_subtype}
+						</if>
+					ORDER BY a.reg_date DESC) a
+				WHERE 1=1	
+			<if test='!searchValue.equals("")'>
+				<choose>
+					<when test='searchItem.equals("name")'>
+					AND a.reg_user_name LIKE '%' || #{searchValue} || '%'
+					</when>
+					<when test='searchItem.equals("title")'>
+					AND a.title LIKE '%' || #{searchValue} || '%'
+					</when>
+					<when test='searchItem.equals("dept_name")'>
+					AND a.dept_name LIKE '%' || #{searchValue} || '%'
+					</when>
+				</choose>
+			</if>
+    <![CDATA[
+        		 AND ROWNUM <= #{endRow})
+		WHERE row_no >= #{startRow}) a
+    ]]>    
+	</select>
+
+
+	<!-- 코멘트 목록 -->
+	<select id="getCommentList" parameterType="map" resultMap="getComment">
+		SELECT
+			*
+		FROM CHUL_TB_comment
+		WHERE board_no = #{board_no}
+	</select>
+
+	<!-- 첨부파일 목록 -->
+	<select id="getBoardFileList" parameterType="map" resultMap="getBoardFile">
+		SELECT
+			*
+		FROM CHUL_TB_board_file
+		WHERE 1=1
+		<if test='board_no != null and !board_no.equals("")'>
+			AND board_no = #{board_no}
+		</if>
+		<if test='file_no != null and !file_no.equals("")'>
+			AND file_no = #{file_no}
+		</if>
+	</select>
+	
+	<!-- 게시판 상세 조회 -->
+	<select id="getBoardView" parameterType="map" resultMap="getBoard">
+		<!-- SELECT 
+			* 
+		FROM CHUL_TB_board 
+		WHERE univ_cd = #{univ_cd}
+			AND board_type = #{board_type}
+			AND board_no = #{board_no} -->
+		SELECT 
+			a.*, det.dept_name, cls.subject_cd, cls.subject_div_cd, cls.class_name as board_subtitle
+		FROM CHUL_TB_BOARD a
+			LEFT OUTER JOIN (	
+				SELECT *
+				FROM V_CHUL_VW_DEPT
+				WHERE UNIV_CD = #{univ_cd}
+				  AND YEAR = #{year}
+				  AND TERM_CD = #{term_cd}
+			) det
+			ON det.dept_cd = a.board_subtype
+			LEFT OUTER JOIN (	
+				SELECT 
+					subject_cd, subject_div_cd, class_name
+				FROM V_CHUL_VW_CLASS
+				WHERE UNIV_CD = #{univ_cd}
+				  AND YEAR = #{year}
+				  AND TERM_CD = #{term_cd}
+				GROUP BY subject_cd, subject_div_cd, class_name 
+			) cls
+			ON (cls.subject_cd || '||' || cls.subject_div_cd) = a.board_subtype			
+		WHERE a.univ_cd = #{univ_cd}
+			AND a.board_type = #{board_type}
+			AND a.board_no = #{board_no}
+	</select>
+	
+	<!-- 게시판 수정 -->
+	<update id="updateBoardInfo">
+		UPDATE 
+			CHUL_TB_board
+		SET title = #{title}, 
+			contents = #{contents},
+			mod_user_no = #{mod_user_no},
+			mod_user_name =  #{mod_user_name},
+			mod_date = sysdate
+		WHERE univ_cd = #{univ_cd}
+			AND board_type = #{board_type}
+			AND board_no = #{board_no}		
+	</update>
+
+	<!-- 게시판 삭제 -->
+	<delete id="deleteBoardInfo">
+		DELETE FROM 
+			CHUL_TB_board
+		WHERE univ_cd = #{univ_cd}
+			AND board_type = #{board_type}
+			AND board_no = #{board_no}		
+	</delete>
+
+	<!-- 코멘트 삭제 -->
+	<delete id="deleteCommentInfo">
+		DELETE FROM 
+			CHUL_TB_comment
+		WHERE 1=1
+		<if test='board_no != null and !board_no.equals("")'>
+			AND board_no = #{board_no}
+		</if>
+		<if test='cmmt_no != null and !cmmt_no.equals("")'>
+			AND cmmt_no = #{cmmt_no}		
+		</if>
+	</delete>
+
+	<!-- 첨부파일 삭제 -->
+	<delete id="deleteBoardFileInfo">
+		DELETE FROM 
+			CHUL_TB_board_file
+		WHERE 1=1 
+		<if test='board_no != null and !board_no.equals("")'>
+			AND board_no = #{board_no}
+		</if>
+		<if test='file_no != null and !file_no.equals("")'>
+			AND file_no = #{file_no}
+		</if>
+	</delete>
+
+	<!-- 게시판 번호 조회 -->
+	<select id="selectBoardNo" resultType="String">
+		SELECT FN_GET_BOARD_NO AS board_no FROM DUAL
+	</select>
+
+	<!-- 게시판 등록 -->
+	<insert id="insertBoardInfo">
+	INSERT INTO CHUL_TB_board (
+		board_no, univ_cd, title, contents, board_type, board_subtype, view_cnt, reg_user_no, reg_user_name, reg_date
+	)
+	VALUES (
+		<!-- 
+		(SELECT FN_GET_BOARD_NO AS board_no FROM DUAL),
+		-->
+		#{board_no}, 
+		#{univ_cd}, #{title}, #{contents}, #{board_type}, #{board_subtype}, 0, #{reg_user_no}, #{reg_user_name}, sysdate
+	)
+	</insert>	
+
+	<!-- 게시판 파일 등록 -->
+	<insert id="insertBoardFileInfo">
+	INSERT INTO CHUL_TB_board_file (
+		file_no, board_no, org_file_name, saved_file_name, file_path, reg_date
+	)
+	VALUES (
+		(SELECT FN_GET_FILE_NO AS board_no FROM DUAL),
+		#{board_no}, #{org_file_name}, #{saved_file_name}, #{file_path}, sysdate
+	)
+	</insert>	
+
+	<!-- 게시판 코멘트 등록 -->
+	<insert id="insertCommentInfo">
+	INSERT INTO CHUL_TB_comment (
+		cmmt_no, board_no, cmmt, reg_user_no, reg_user_name, reg_date
+	)
+	VALUES (
+		(SELECT FN_GET_COMMENT_NO AS cmmt_no FROM DUAL),
+		#{board_no}, #{cmmt}, #{reg_user_no}, #{reg_user_name}, sysdate
+	)
+	</insert>	
+</mapper>

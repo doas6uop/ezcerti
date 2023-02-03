@@ -1,0 +1,142 @@
+@charset="utf-8";
+
+@media all and (max-width:1000px) {
+	header .bar_info .manual_pro, header .bar_info .manual_stu{display:none;}
+	header .bar_info, header .bar_info dl, header .gnb, 
+	header .bar_head .bar_area, main{width:100%;padding-left:0;padding-right:0;}
+	header .gnb, main{padding-left:10px;padding-right:10px;}
+	header .gnb nav{display:none;}
+	header .gnb .show_mb{display:block;}
+	header .bar_head{padding-top:0;}
+	header .bar_nav{background:#1e3d5c;height:40px;line-height:40px;margin-bottom:0 !important;}
+	header .bar_nav .bar_nav_arrow.first{display:none;}
+	header .bar_nav .axi-home2{background:#6693c0;color:#fff;display:inline-block;width:40px;height:40px;text-align:center;line-height:40px;margin-right:10px;}
+	header .bar_nav *{color:#fff;}
+	header .bar_head .tit{font-size:25px;margin:30px 0 0 10px;}
+	header .csinfo_box{width:335px;margin-left:-240px;}
+	header .csinfo_box .tit{font-size:18px;}
+
+	.gnb .m_stats{display:none;}
+
+	main .lnb{display:none;}
+	main content{float:none;width:100%;padding:10px;}
+	main .list_btnarea{text-align:center;}
+
+	.list_common .a_stats_date, .list_common .a_stats_time{display:block;}
+
+	.list_attend li span{font-size:11px;}
+
+	.list_common .ele.subject{display:block;}
+
+}
+
+@media all and (max-width:640px) {
+	main content{padding:1%;}
+
+	header .csinfo_box{width:300px;margin-left:-205px;}
+	header .csinfo_box .tit{font-size:16px;}
+
+	.pagination > li > a, .pagination > li > span{border:0;width:25px;}
+	.pagination > .active > a, 
+	.pagination > .active > span, 
+	.pagination > .active > a:hover, 
+	.pagination > .active > span:hover, 
+	.pagination > .active > a:focus, 
+	.pagination > .active > span:focus{background:none;border:0;color:#333;font-weight:800;}
+
+	.srch_common{border:0;border-radius:0;padding:0;}
+	.srch_common select, .srch_common input[type=text]{width:100%;display:block;min-width:0;margin-bottom:5px;}
+	.srch_common .date_select .date_select_box{border:1px solid #ddd;width:47.5%;margin-bottom:5px;text-align:right;padding-right:5px;}
+	.srch_common .date_select input[type=text]{border:0;width:87%;display:inline-block;margin-bottom:0;}
+	.srch_common .date_select .axi-calendar{font-size:15px;}
+	.srch_common .srch_btnarea{text-align:center;width:100%;display:block;}
+
+	.list_common li, .list_common table tbody td{padding:2%;}
+	.list_common li .tit_box{margin-left:0;}
+	.list_common li .tit_box *{display:block;border:0;}
+	.list_common .ico_txt{font-size:11px;}
+	.list_common *{font-size:11px;}
+	.list_common .tit_box.width_full .tit{font-size:10px;}
+	.list_common .tit_info{font-size:10px;}
+	.list_common .li_btnarea .btn{display:block;margin-top:3px;}
+	.list_common table td .tit{font-size:11px;}
+	.list_common .test{display:none;}
+
+	.list_common2 li, .list_common table tbody td{padding:2%;}
+	.list_common2 li .tit_box{margin-left:0;}
+	.list_common2 li .tit_box *{display:block;border:0;}
+	.list_common2 .ico_txt{font-size:11px;}
+	.list_common2 *{font-size:11px;}
+	.list_common2 .tit_box.width_full .tit{font-size:10px;}
+	.list_common2 .tit_info{font-size:10px;}
+	.list_common2 .li_btnarea .btn{display:block;margin-top:3px;}
+	.list_common2 table td .tit{font-size:11px;}
+	.list_common2 .test{display:none;}
+	
+	.memo_common .memo_area{display:block;line-height:160%;}
+	.memo_common .memo_area *{color:#999;}
+	.memo_common .memo_area.date_area{float:none;}
+	.memo_common .memo_area .tit{display:inline-block;border-right:1px solid #ddd;padding:0 5px 0 0;margin-right:5px;font-size:11px;font-weight:800;}
+	.memo_common .send,
+	.memo_common .rcv,
+	.memo_common .send_date,
+	.memo_common .chk_date{padding:0 10px 0 0;}
+	.memo_common .desc{padding:10px 0;display:block;color:#333;}
+
+	/*
+	.list_srch_common .srch_select{display:none;}
+	.list_srch_common .btn{display:none;}
+	*/
+	.list_srch_common select{width:80px;}
+	.list_srch_common .srch{width:110px;}
+	.list_srch_common .btn{width:90px;}
+	
+
+	.list_detail_common{padding-left:0;padding-right:0;}
+	.list_detail_common .infoarea{margin-left:110px;}
+	.list_detail_common table th, .list_detail_common table tbody td{padding:22px 2%;font-size:12px;}
+	.list_detail_common .fl_l.w_half, .list_detail_common .fl_r.w_half{width:100%;display:block;}
+	.list_btnarea.align_middle .btn{font-size:11px;padding:3px 6px;}
+
+	.list_common .axi-ion-android-arrow-forward{font-size:30px;}
+
+	.list_btnarea .btn{width:90px;}
+	.list_common .btn{min-width:inherit;}
+
+	.list_detail_common textarea.desc{height:90px;}
+	.list_detail_common .rcv_peo input[type=text]{width:72.5%;}
+	.list_detail_common .rcv_peo .btnarea{display:block;margin-top:5px;}
+
+	.list_common.list_full .btn{padding:2px 3px;}
+
+	.infoarea.w_half_B{width:60%;float:right;}
+	.infoarea.ls_list{margin-top:15px;}
+
+	.list_tit .tit{display:block;border-right:0;}
+	.list_tit .tit_info{display:block;}
+
+	.list_attend li{padding:0 1px;}
+	.list_attend .txt_info, .list_attend .txt_ls, .list_attend .txt_ls_sec{display:none;}
+
+	.list_attend.list_attend_stu li p .btn{font-size:8px;}
+
+	.list_attend.list_attend_stu li p{padding-left:5px;padding-right:5px;height:65px;margin-right:0;}	
+
+	.srch_common{background:#eee;padding:10px;}
+	.srch_common.type_stats p{display:block;}
+
+	.srch_common.type_stats.pro{background:#fff;border-radius:10px;border:3px solid #eee;}
+	.srch_common.type_stats.pro p{display:inline-block;}
+	.srch_common.type_stats.pro .tit, .srch_common.type_stats.pro .tit_info, .srch_common.type_stats.pro .btn{font-size:11px;}
+	.srch_common.type_stats.pro .tit_info{margin-right:10px;}
+	.srch_common.type_stats.pro .btn{padding:2px 5px;min-width:auto;}
+
+	.list_common .ele{display:block;}
+	.list_common .ele .tit, .list_common .ele .tit_info{font-size:11px;}
+	.list_common .ele .tit{min-width:60px;display:inline-block;margin-right:2px;}
+	.list_common .ele.dp_ib{display:inline-block;margin-right:5px;}
+
+	.list_detail_common .infoarea .progress{display:block;width:50%;}
+
+	.popup .pop_td_none{display:none;}
+}

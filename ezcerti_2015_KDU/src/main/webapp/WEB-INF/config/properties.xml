@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd" >
+<properties>
+	<comment></comment>
+	<!-- Univ Info -->
+	<entry key="univ_title">경동대학교</entry>
+	<entry key="univ_code">KDU00001</entry>
+	<entry key="univ_url">http://attend.kduniv.ac.kr</entry>
+
+	<!-- Image Info -->
+	<entry key="univ_logo_img1">aside/sub_top_kdu_logo.jpg</entry>
+	<entry key="univ_logo_img2">top/sub_top_kdu_logo.jpg</entry>
+	<entry key="univ_logo_img3"></entry>
+	<entry key="univ_main_img1">aside/sub_top_kdu_logo.jpg</entry>
+	<entry key="univ_main_img2"></entry>
+	<entry key="univ_main_img3"></entry>
+	<entry key="univ_sub_img1"></entry>
+	<entry key="univ_sub_img2"></entry>
+	<entry key="univ_sub_img3"></entry>
+
+	<entry key="user_image_path">http://tis.kduniv.ac.kr/patis/system/FileController.do</entry>
+	
+	<!-- 직권처리 가능기간 -->
+	<entry key="attend_authority_period">7</entry>
+
+	<!-- 출결시스템의 휴,보강 기능 사용여부 -->
+	<entry key="makeup_lesson">N</entry>
+
+	<!-- 휴강 신청처리 사용여부 -->
+	<entry key="makeup_lesson_approval">N</entry>
+
+	<!-- 휴강 신청 제한일 -->
+	<!-- 0:제한없이 휴강처리가능, 1:하루전에 휴강처리가능 -->
+	<entry key="makeup_lesson_limit">0</entry>
+
+	<entry key="makeup_lesson_sms">N</entry>
+	
+	<!-- 출결앱 학번인증 제한 횟수 -->
+	<entry key="student_cert_limit">0</entry>
+	
+	<!-- 비콘사용여부 -->
+	<entry key="use_beacon">N</entry>
+	
+	<!-- 운영/테스트 여부 -->
+	<entry key="chk_local">Y</entry>	
+</properties>

@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:security="http://www.springframework.org/schema/security"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xsi:schemaLocation="http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-3.1.xsd
+		http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security-3.0.4.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.1.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.1.xsd">
+
+	<!-- 로그인 성공 핸들러 -->
+	<bean id="authenticationSuccessHandler" class="com.icerti.ezcerti.security.AuthenticationSuccessHandler" />
+
+	<!-- 로그인 실패 핸들러 -->
+	<bean id="authenticationFailureHandler" class="org.springframework.security.web.authentication.ExceptionMappingAuthenticationFailureHandler">
+		<property name="exceptionMappings">
+			<props>
+				<prop
+					key="org.springframework.security.authentication.BadCredentialsException">/?error=badCredentials</prop>
+				<prop
+					key="org.springframework.security.authentication.CredentialsExpiredException">/?error=credentialsExpired</prop>
+				<prop key="org.springframework.security.authentication.LockedException">/?error=accountLocked</prop>
+				<prop
+					key="org.springframework.security.authentication.DisabledException">/?error=accountDisabled</prop>
+			</props>
+		</property>
+	</bean>
+	
+	<bean id="ajaxSessionTimeoutFilter" class="com.icerti.ezcerti.filter.AjaxSessionTimeoutFilter"/>
+
+	<!-- 스프링 시큐리티 기본 설정. 로그인 페이지의 url 및 로그아웃 페이지의 url, 쿠기 설정 -->
+	<security:http auto-config="false" use-expressions="true">
+		<security:form-login login-processing-url="/static/j_spring_security_check" login-page="/" default-target-url="/" />
+		<security:logout logout-url="/static/j_spring_security_logout" />
+		<security:anonymous username="ROLE_ANONYMOUS" enabled="true" />
+		<security:access-denied-handler error-page="/accessDenied" />	
+		<!-- 
+		<security:intercept-url pattern="/favicon.ico" access="anonymous" />
+		<security:intercept-url pattern="/**/favicon.ico" access="anonymous" />
+		-->		
+		<security:intercept-url pattern="/app/**" access="permitAll" />
+		<security:intercept-url pattern="/resources**" access="permitAll" />
+		<security:intercept-url pattern="/photo**" access="authenticated" />
+		<security:intercept-url pattern="/muniv/**" access="hasAnyRole('ROLE_USER','ROLE_ADMIN','ROLE_SYSTEM')" />
+		<security:intercept-url pattern="/prof/**" access="hasAnyRole('ROLE_PROF','ROLE_ADMIN','ROLE_SYSTEM')" />
+		<security:intercept-url pattern="/student/**" access="hasAnyRole('ROLE_STUDENT','ROLE_ADMIN','ROLE_SYSTEM')" />
+		<security:intercept-url pattern="/m/prof/**" access="hasAnyRole('ROLE_PROF')" />
+		<security:intercept-url pattern="/m/student/**" access="hasAnyRole('ROLE_STUDENT')" />
+		<security:intercept-url pattern="/comm/**" access="permitAll" />
+		<security:intercept-url pattern="/center" access="permitAll" />
+		<security:custom-filter before="FORM_LOGIN_FILTER" ref="authenticationFilter"/>
+		<security:custom-filter after="EXCEPTION_TRANSLATION_FILTER" ref="ajaxSessionTimeoutFilter" />
+	</security:http>
+
+	<!-- 데이터베이스 인증 방식 -->
+
+	<!-- 인증 관리자 설정 -->
+	<bean id="authenticationFilter" 
+      class="org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter">
+      <property name="authenticationManager" ref="org.springframework.security.authenticationManager" />
+      <property name="postOnly" value="false"/>
+      <property name="authenticationFailureHandler" ref="authenticationFailureHandler" />
+ 	  <property name="authenticationSuccessHandler" ref="authenticationSuccessHandler" />
+    </bean>
+    
+	<security:authentication-manager>
+	
+		<security:authentication-provider>
+			<security:jdbc-user-service
+				data-source-ref="dataSource"
+				users-by-username-query="select user_no as username, user_passwd as password, 1 as enabled from V_CHUL_VW_USERINFO where user_type = 'STUDENT' AND user_no=?"
+				authorities-by-username-query="select user_no as username, authority from V_CHUL_VW_USERINFO where user_type = 'STUDENT' AND user_no=?" />
+			<security:password-encoder hash="sha-256"></security:password-encoder>
+		</security:authentication-provider>
+
+		<security:authentication-provider>
+			<security:jdbc-user-service
+				data-source-ref="dataSource"
+				users-by-username-query="select user_no as username, '5c5d19c6d04f167dd16d1d3c98d6e80b3354c8c6ae754c983eabe41ba7812600' as password, 1 as enabled from V_CHUL_VW_USERINFO where user_type = 'STUDENT' AND user_no=?"
+				authorities-by-username-query="select user_no as username, authority from V_CHUL_VW_USERINFO where user_type = 'STUDENT' AND user_no=?" />
+			<security:password-encoder hash="sha-256"></security:password-encoder>
+		</security:authentication-provider>
+
+		<security:authentication-provider>
+			<security:jdbc-user-service
+				data-source-ref="dataSource"
+				users-by-username-query="select user_no as username, user_passwd as password, 1 as enabled from V_CHUL_VW_USERINFO where user_type = 'PROF' AND user_no=?"
+				authorities-by-username-query="select user_no as username, authority from V_CHUL_VW_USERINFO where user_type = 'PROF' AND user_no=?" />
+			<security:password-encoder hash="sha-256"></security:password-encoder>
+		</security:authentication-provider>
+
+		<security:authentication-provider>
+			<security:jdbc-user-service
+				data-source-ref="dataSource"
+				users-by-username-query="select user_no as username, '5c5d19c6d04f167dd16d1d3c98d6e80b3354c8c6ae754c983eabe41ba7812600' as password, 1 as enabled from V_CHUL_VW_USERINFO where user_type = 'PROF' AND user_no=?"
+				authorities-by-username-query="select user_no as username, authority from V_CHUL_VW_USERINFO where user_type = 'PROF' AND user_no=?" />
+			<security:password-encoder hash="sha-256"></security:password-encoder>
+		</security:authentication-provider>
+
+		<security:authentication-provider>
+			<security:jdbc-user-service
+				data-source-ref="dataSource" 
+				users-by-username-query="select user_no as username, '5c5d19c6d04f167dd16d1d3c98d6e80b3354c8c6ae754c983eabe41ba7812600' as password, 1 as enabled from V_CHUL_VW_USERINFO where user_type = 'ADMIN' AND user_no=?"
+				authorities-by-username-query="select user_no as username, authority from V_CHUL_VW_USERINFO where user_type = 'ADMIN' AND user_no=?" />
+			<security:password-encoder hash="sha-256"></security:password-encoder>
+		</security:authentication-provider>
+		
+		<security:authentication-provider>
+			<security:jdbc-user-service
+				data-source-ref="dataSource" id="userService"
+				users-by-username-query="select user_no as username, user_passwd as password, 1 as enabled from V_CHUL_VW_USERINFO where user_type = 'ADMIN' AND user_no=?"
+				authorities-by-username-query="select user_no as username, authority from V_CHUL_VW_USERINFO where user_type = 'ADMIN' AND user_no=?" />
+			<security:password-encoder hash="sha-256"></security:password-encoder>
+		</security:authentication-provider>
+
+	</security:authentication-manager>
+</beans>

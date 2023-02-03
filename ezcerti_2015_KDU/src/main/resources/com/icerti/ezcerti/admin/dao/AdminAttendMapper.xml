@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.icerti.ezcerti.admin.dao.AdminAttendMapper">
+
+<select id="getAdminAttendList" parameterType="map" resultType="com.icerti.ezcerti.domain.Attendmaster">
+SELECT *
+FROM
+	(
+		SELECT A.*, ROWNUM row_no
+		FROM (
+		
+			SELECT 
+				c1.code_name AS class_sts_name, 
+				c2.code_name AS class_prog_name, 
+				c3.code_name AS class_type_name, 
+				c4.code_name AS cert_sts_name, 
+				a.*
+			FROM (
+					SELECT 
+						DISTINCT a.*, p.hp_no
+					FROM V_CHUL_VW_attendmaster a
+						JOIN V_CHUL_VW_prof p 
+						ON a.prof_no=p.prof_no
+					WHERE a.univ_cd=#{univ_cd}
+					AND a.year=#{year}
+					AND a.term_cd=#{term_cd}
+					<if test='coll_cd != null and !coll_cd.equals("")'>	
+					AND p.coll_cd=#{coll_cd}
+					</if>
+					<if test='dept_cd != null and !dept_cd.equals("")'>
+					AND p.dept_cd=#{dept_cd}
+					</if>
+					<if test='prof_no != null and !prof_no.equals("")'>
+					AND a.prof_no=#{prof_no}
+					</if>
+					<if test='class_type_cd != null and !class_type_cd.equals("")'>
+					AND a.class_type_cd=#{class_type_cd}
+					</if>
+					<if test='class_cd != null and !class_cd.equals("")'>
+					AND a.class_cd=#{class_cd}
+					</if>
+					AND to_char(CLASSDAY, 'YYYY-MM-DD') >=
+					<choose>
+					<when test='classday_start != null and !classday_start.equals("")'>
+					#{classday_start}
+					</when>
+					<otherwise>
+					'2012-01-01'
+					</otherwise>
+					</choose>
+					<![CDATA[ 
+					AND to_char(CLASSDAY, 'YYYY-MM-DD') <=
+					]]> 
+					<choose>
+					<when test='classday_end != null and !classday_end.equals("")'>
+					#{classday_end}
+					</when>
+					<otherwise>
+					'2099-12-31'
+					</otherwise>
+					</choose>
+					<if test='!searchValue.equals("")'>
+					<choose>
+						<when test='item.equals("all")'>
+					        AND (A.PROF_NAME LIKE #{searchValue} || '%' OR upper(A.CLASS_NAME) LIKE upper(#{searchValue}) || '%')
+						</when>
+						<when test='item.equals("class")'>
+					        AND upper(A.CLASS_NAME) LIKE upper(#{searchValue}) || '%'
+						</when>
+						<when test='item.equals("dept")'>
+					        AND A.PROF_DEPT_NAME LIKE #{searchValue} || '%'
+					    </when>
+						<when test='item.equals("prof")'>
+					        AND A.PROF_NAME LIKE #{searchValue} || '%'
+					    </when>
+					</choose>
+					</if>
+			) a, 
+			CHUL_TB_codemaster c1, 
+			CHUL_TB_codemaster c2, 
+			CHUL_TB_codemaster c3, 
+			CHUL_TB_codemaster c4
+			WHERE a.class_sts_cd=c1.code
+			  AND a.class_prog_cd=c2.code
+			  AND a.class_type_cd=c3.code
+			  AND a.cert_sts_cd=c4.code(+)
+			<choose>
+				<when test='sortField != null and !sortField.equals("")'>
+					ORDER BY ${sortField} ${sortOrder}
+				</when>
+				<otherwise>
+					ORDER BY CLASSDAY || CLASSHOUR_START_TIME ASC
+				</otherwise>
+			</choose>	
+		) A			
+		WHERE ROWNUM <![CDATA[<=]]> #{endRow}
+	)
+WHERE row_no >= #{startRow}
+ORDER BY CLASSDAY ASC
+</select>
+
+<select id="getAdminAttendListCount" parameterType="map" resultType="int">
+SELECT COUNT(*)
+FROM
+		(SELECT DISTINCT a.*
+		FROM V_CHUL_VW_attendmaster a
+		JOIN V_CHUL_VW_prof p ON a.prof_no=p.prof_no
+		WHERE a.univ_cd=#{univ_cd}
+		AND a.year=#{year}
+		AND a.term_cd=#{term_cd}
+		<if test='coll_cd != null and !coll_cd.equals("")'>	
+		AND p.coll_cd=#{coll_cd}
+		</if>
+		<if test='dept_cd != null and !dept_cd.equals("")'>
+		AND p.dept_cd=#{dept_cd}
+		</if>
+		<if test='prof_no != null and !prof_no.equals("")'>
+		AND a.prof_no=#{prof_no}
+		</if>
+		<if test='class_type_cd != null and !class_type_cd.equals("")'>
+		AND a.class_type_cd=#{class_type_cd}
+		</if>
+		<if test='class_cd != null and !class_cd.equals("")'>
+		AND a.class_cd=#{class_cd}
+		</if>		
+		AND to_char(CLASSDAY, 'YYYY-MM-DD') >=
+		<choose>
+		<when test='classday_start != null and !classday_start.equals("")'>
+		#{classday_start}
+		</when>
+		<otherwise>
+		'2012-01-01'
+		</otherwise>
+		</choose>
+		<![CDATA[ 
+		AND to_char(CLASSDAY, 'YYYY-MM-DD') <=
+		]]> 
+		<choose>
+		<when test='classday_end != null and !classday_end.equals("")'>
+		#{classday_end}
+		</when>
+		<otherwise>
+		'2099-12-31'
+		</otherwise>
+		</choose>
+		<if test='!searchValue.equals("")'>
+		<choose>
+			<when test='item.equals("all")'>
+		        AND (A.PROF_NAME LIKE #{searchValue} || '%' OR upper(A.CLASS_NAME) LIKE upper(#{searchValue}) || '%')
+		    </when>
+			<when test='item.equals("class")'>
+		        AND upper(A.CLASS_NAME) LIKE upper(#{searchValue}) || '%'
+			</when>
+			<when test='item.equals("dept")'>
+		        AND A.PROF_DEPT_NAME LIKE #{searchValue} || '%'
+		    </when>
+			<when test='item.equals("prof")'>
+		        AND A.PROF_NAME LIKE #{searchValue} || '%'
+		    </when>
+		</choose>
+		</if>
+		) a
+</select>	
+
+<select id="getAdminAttendListAll" parameterType="map" resultType="com.icerti.ezcerti.domain.Attendmaster">
+SELECT *
+FROM
+	(SELECT ROWNUM row_no, 
+			c1.code_name AS class_sts_name, 
+			c2.code_name AS class_prog_name, 
+			c3.code_name AS class_type_name, 
+			c4.code_name AS cert_sts_name, 
+			a.*, cr.req_reason
+	FROM
+		(SELECT a.*
+		FROM 
+			V_CHUL_VW_attendmaster a
+		WHERE a.univ_cd=#{univ_cd}
+		AND a.year=#{year}
+		AND a.term_cd=#{term_cd}
+		<if test='!class_type_cd.equals("")'>
+		AND a.class_type_cd=#{class_type_cd}
+		</if>
+		<if test='!class_cd.equals("")'>
+		AND a.class_cd=#{class_cd}
+		</if>
+		<if test='!searchValue.equals("")'>
+		<choose>
+			<when test='item.equals("class")'>
+		        AND A.CLASS_NAME LIKE '%' || #{searchValue} || '%'
+			</when>
+			<when test='item.equals("dept")'>
+		        AND A.PROF_DEPT_NAME LIKE '%' || #{searchValue} || '%'
+		    </when>
+			<when test='item.equals("prof")'>
+		        AND A.PROF_NAME LIKE '%' || #{searchValue} || '%'
+		    </when>
+		</choose>
+		</if>
+	<![CDATA[	
+		) a
+	    INNER JOIN CHUL_TB_codemaster c1 ON c1.code = a.class_sts_cd
+	    INNER JOIN CHUL_TB_codemaster c2 ON c2.code = a.class_prog_cd
+	    INNER JOIN CHUL_TB_codemaster c3 ON c3.code = a.class_type_cd
+	    INNER JOIN CHUL_TB_codemaster c4 ON c4.code = a.cert_sts_cd
+	    LEFT OUTER JOIN CHUL_TB_CLASSOFF_REQUEST cr ON cr.class_cd = a.class_cd
+	      and trunc(cr.classday) = trunc(a.classday)
+	      and cr.classhour_start_time = a.classhour_start_time
+	WHERE ROWNUM <= #{endRow})
+	]]>
+	WHERE row_no >= #{startRow} 
+	ORDER BY CLASSDAY ASC
+</select>
+
+<select id="getAdminAttendListAllCount" parameterType="map" resultType="int">
+SELECT COUNT(*)
+FROM
+		(SELECT a.*
+		FROM 
+			V_CHUL_VW_attendmaster a
+		WHERE a.univ_cd=#{univ_cd}
+		AND a.year=#{year}
+		AND a.term_cd=#{term_cd}
+		<if test='!class_type_cd.equals("")'>
+		AND a.class_type_cd=#{class_type_cd}
+		</if>
+		<if test='!class_cd.equals("")'>
+		AND a.class_cd=#{class_cd}
+		</if>		
+		<if test='!searchValue.equals("")'>
+		<choose>
+			<when test='item.equals("class")'>
+		        AND A.CLASS_NAME LIKE '%' || #{searchValue} || '%'
+			</when>
+			<when test='item.equals("dept")'>
+		        AND A.PROF_DEPT_NAME LIKE '%' || #{searchValue} || '%'
+		    </when>
+			<when test='item.equals("prof")'>
+		        AND A.PROF_NAME LIKE '%' || #{searchValue} || '%'
+		    </when>
+		</choose>
+		</if>
+		) a
+</select>
+
+<update id="setClearAttend" parameterType="map" >
+	CALL CHUL_CLEAR_ATTENDINFO (#{class_cd}, #{classday}, #{classhour_start_time})
+</update>
+	
+</mapper>

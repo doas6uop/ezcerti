@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.icerti.ezcerti.admin.dao.AdminStudentMapper">
+
+<select id="getStudentListCount" parameterType="map" resultType="int">
+SELECT COUNT(*)
+FROM 
+	V_CHUL_VW_STUDENT A, CHUL_TB_STUDENT_CERT_COUNT CERT
+WHERE UNIV_CD=#{univ_cd}
+  	AND A.STUDENT_NO = CERT.STUDENT_NO(+)
+<if test='coll_cd != null and !coll_cd.equals("")'>
+	AND COLL_CD=#{coll_cd}
+</if>
+<if test='dept_cd != null and !dept_cd.equals("")'>
+	AND DEPT_CD=#{dept_cd}
+</if>
+<if test='!searchValue.equals("")'>
+  <choose>
+   <when test='item.equals("name")'>
+    AND a.student_name LIKE #{searchValue} || '%'
+   </when>
+   <when test='item.equals("code")'>
+    AND a.student_no LIKE #{searchValue} || '%'
+   </when>
+   <when test='item.equals("cert_count")'>
+    AND cert.cert_count >= #{searchValue}
+   </when>
+  </choose>
+</if>
+</select>
+
+<select id="getStudentList" parameterType="map" resultType="com.icerti.ezcerti.domain.Student">
+<![CDATA[
+SELECT B.CODE_NAME AS STUDENT_STS_NAME, C.CODE_NAME AS NATION_NAME, A.* 
+FROM
+    (SELECT *
+    FROM
+        (
+        	SELECT A.*, ROWNUM row_no
+    		FROM (
+		        	SELECT *
+		    		FROM (
+					        SELECT 
+					        	A.*, NVL(CERT.CERT_COUNT, 0) CERT_COUNT
+					        FROM 
+					        	V_CHUL_VW_STUDENT A, CHUL_TB_STUDENT_CERT_COUNT CERT
+					        WHERE UNIV_CD=#{univ_cd}
+					        	AND A.STUDENT_NO = CERT.STUDENT_NO(+)
+]]>
+							<if test='coll_cd != null and !coll_cd.equals("")'>
+								AND COLL_CD=#{coll_cd}
+							</if>
+							<if test='dept_cd != null and !dept_cd.equals("")'>
+								AND DEPT_CD=#{dept_cd}
+							</if>
+							<if test='!searchValue.equals("")'>
+							  <choose>
+								<when test='item.equals("name")'>
+							        AND a.student_name LIKE #{searchValue} || '%'
+								</when>
+								<when test='item.equals("code")'>
+							        AND a.student_no LIKE #{searchValue} || '%'
+							    </when>
+								<when test='item.equals("cert_count")'>
+							        AND cert.cert_count >= #{searchValue}
+							    </when>
+							  </choose>
+							</if>
+					) A			
+					WHERE 1=1		
+					<choose>
+						<when test='sortField != null and !sortField.equals("")'>
+							ORDER BY ${sortField} ${sortOrder}
+						</when>
+						<otherwise>
+							ORDER BY STUDENT_NAME ASC
+						</otherwise>
+					</choose>	
+			) A	
+<![CDATA[        
+        WHERE ROWNUM <= #{endRow})
+    WHERE row_no>=#{startRow}) A, CHUL_TB_CODEMASTER B, CHUL_TB_CODEMASTER C
+WHERE A.STUDENT_STS_CD=B.CODE
+AND A.NATION_CD=C.CODE
+]]>
+</select>
+
+<select id="getStudentAttendList" resultType="com.icerti.ezcerti.domain.Attenddethist">
+SELECT *
+FROM CHUL_TB_attenddethist
+WHERE univ_cd=#{univ_cd}
+	AND year=#{year}
+	AND term_cd=#{term_cd}
+	AND student_no=#{student_no}
+</select>
+
+<update id="updateStudentOffAttendmaster" parameterType="com.icerti.ezcerti.domain.Attenddethist">
+UPDATE 
+	CHUL_TB_attendmaster_addinfo
+<choose>
+<when test='attend_sts_cd.equals("G023C001")'>
+SET attend_off_cnt=attend_off_cnt+1
+</when>
+<when test='attend_sts_cd.equals("G023C002")'>
+SET attend_present_cnt=attend_present_cnt-1, attend_off_cnt=attend_off_cnt+1
+</when>
+<when test='attend_sts_cd.equals("G023C003")'>
+SET attend_late_cnt=attend_late_cnt-1, attend_off_cnt=attend_off_cnt+1
+</when>
+<when test='attend_sts_cd.equals("G023C004")'>
+SET attend_absent_cnt=attend_absent_cnt-1, attend_off_cnt=attend_off_cnt+1
+</when>
+<otherwise>
+SET attend_quit_cnt=attend_quit_cnt
+</otherwise>
+</choose>
+WHERE univ_cd=#{univ_cd}
+	AND year=#{year}
+	AND term_cd=#{term_cd}
+	AND class_cd=#{class_cd}
+	AND to_char(classday, 'YYYY-MM-DD')=#{classday}
+	AND classhour_start_time=#{classhour_start_time} 
+</update>
+
+<update id="updateStudentOffAttendmasterAddInfo">
+UPDATE CHUL_TB_ATTENDMASTER_ADDINFO SET 
+(ATTEND_PRESENT_CNT, ATTEND_LATE_CNT, ATTEND_ABSENT_CNT, ATTEND_OFF_CNT, ATTEND_QUIT_CNT) = 
+(
+SELECT 
+    COUNT (CASE WHEN ATTEND_STS_CD = 'G023C002' THEN 1 END) AS ATTEND_PRESENT_CNT,
+    COUNT (CASE WHEN ATTEND_STS_CD = 'G023C003' THEN 1 END) AS ATTEND_LATE_CNT,
+    COUNT (CASE WHEN ATTEND_STS_CD = 'G023C004' THEN 1 END) AS ATTEND_ABSENT_CNT,
+    COUNT (CASE WHEN ATTEND_STS_CD = 'G023C005' THEN 1 END) AS ATTEND_OFF_CNT,
+    COUNT (CASE WHEN ATTEND_STS_CD = 'G023C007' THEN 1 END) AS ATTEND_QUIT_CNT
+FROM CHUL_TB_ATTENDDETHIST 
+WHERE UNIV_CD = #{univ_cd}
+    AND YEAR = #{year}
+    AND TERM_CD = #{term_cd}
+    AND CLASS_CD = #{class_cd}
+    AND to_char(classday, 'YYYY-MM-DD') = #{classday}
+    AND PROF_NO = #{prof_no}
+)    
+</update>
+
+<update id="updateStudentOffAttenddethist">
+UPDATE CHUL_TB_attenddethist
+SET attend_sts_cd='G023C005'
+WHERE univ_cd=#{univ_cd}
+	and year=#{year}
+	and term_cd=#{term_cd}
+	and student_no=#{student_no}
+</update>
+
+<update id="updateStudentOffStatus">
+UPDATE CHUL_TB_dju_student
+SET student_sts_cd='G012C002'
+WHERE univ_cd=#{univ_cd}
+	AND term_cd=#{term_cd}
+	AND student_no=#{student_no}
+</update>
+
+<update id="updateStudentQuitAttendmaster" parameterType="com.icerti.ezcerti.domain.Attenddethist">
+UPDATE 
+	CHUL_TB_attendmaster_addinfo
+<choose>
+<when test='attend_sts_cd.equals("G023C001")'>
+SET attend_quit_cnt=attend_quit_cnt+1
+</when>
+<when test='attend_sts_cd.equals("G023C002")'>
+SET attend_present_cnt=attend_present_cnt-1, attend_quit_cnt=attend_quit_cnt+1
+</when>
+<when test='attend_sts_cd.equals("G023C003")'>
+SET attend_late_cnt=attend_late_cnt-1, attend_quit_cnt=attend_quit_cnt+1
+</when>
+<when test='attend_sts_cd.equals("G023C004")'>
+SET attend_absent_cnt=attend_absent_cnt-1, attend_quit_cnt=attend_quit_cnt+1
+</when>
+<otherwise>
+SET attend_off_cnt=attend_off_cnt
+</otherwise>
+</choose>
+WHERE univ_cd=#{univ_cd}
+	AND year=#{year}
+	AND term_cd=#{term_cd}
+	AND class_cd=#{class_cd}
+	AND to_char(classday, 'YYYY-MM-DD')=#{classday}
+	AND classhour_start_time=#{classhour_start_time} 
+</update>
+
+<update id="updateStudentQuitAttenddethist">
+UPDATE CHUL_TB_attenddethist
+SET attend_sts_cd='G023C007'
+WHERE univ_cd=#{univ_cd}
+	and year=#{year}
+	and term_cd=#{term_cd}
+	and student_no=#{student_no}
+</update>
+
+<update id="updateStudentQuitStatus">
+UPDATE CHUL_TB_dju_student
+SET student_sts_cd='G012C005'
+WHERE univ_cd=#{univ_cd}
+	AND term_cd=#{term_cd}
+	AND student_no=#{student_no}
+</update>
+
+<update id="initStudentCertCount" parameterType="String">
+UPDATE CHUL_TB_STUDENT_CERT_COUNT
+SET CERT_COUNT = 0,
+	CERT_DATE = SYSDATE
+WHERE STUDENT_NO = #{student_no}
+</update>
+
+</mapper>

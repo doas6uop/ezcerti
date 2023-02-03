@@ -1,0 +1,755 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.icerti.ezcerti.common.dao.CommonMapper">
+
+	<resultMap type="com.icerti.ezcerti.domain.Univ" id="getProfTerm">
+	<id property="term_cd" column="term_cd"/>
+	<result property="term_name" column="term_name"/>
+	<result property="year" column="year"/>
+	</resultMap>
+	<resultMap type="com.icerti.ezcerti.domain.Univ" id="getStudentTerm">
+	<id property="term_cd" column="term_cd"/>
+	<result property="term_name" column="term_name"/>
+	</resultMap>
+	
+	<resultMap type="com.icerti.ezcerti.domain.Prof" id="getProf">
+	<id property="prof_no" column="prof_no"/>
+	<result property="univ_cd" column="univ_cd"/>
+	<result property="term_cd" column="term_cd"/>
+	<result property="coll_cd" column="coll_cd"/>
+	<result property="dept_cd" column="dept_cd"/>
+	<result property="coll_name" column="coll_name"/>
+	<result property="dept_name" column="dept_name"/>
+	<result property="dept_name" column="dept_name"/>
+	<result property="prof_passwd" column="prof_passwd"/>
+	<result property="hp_no" column="hp_no"/>
+	<result property="email_addr" column="email_addr"/>
+	<result property="photo_info" column="photo_info"/>
+	<result property="prof_status" column="prof_status"/>
+	<result property="prof_sts_cd" column="prof_sts_name"/>
+	<result property="prof_adm_cd" column="prof_adm_cd"/>
+	<result property="prof_nick_name" column="prof_nick_name"/>
+	<result property="authority" column="authority"/>
+	<result property="reg_type_cd" column="reg_type_cd"/>
+	<result property="reg_etc" column="reg_etc"/>
+	<result property="reg_date" column="reg_date"/>
+	</resultMap>
+	
+	<resultMap type="com.icerti.ezcerti.domain.Student" id="getStudent">
+	<id property="row_no" column="row_no"/>
+	<result property="univ_cd" column="univ_cd"/>
+	<result property="term_cd" column="term_cd"/>
+	<result property="student_no" column="user_no"/>
+	<result property="coll_cd" column="coll_cd"/>
+	<result property="dept_cd" column="dept_cd"/>
+	<result property="coll_name" column="coll_name"/>
+	<result property="dept_name" column="dept_name"/>
+	<result property="student_name" column="user_name"/>
+	<result property="student_grade_cd" column="student_grade_cd"/>
+	<result property="student_grade_name" column="grade_name"/>
+	<result property="student_passwd" column="user_passwd"/>
+	<result property="hp_no" column="hp_no"/>
+	<result property="email_addr" column="email_addr"/>
+	<result property="photo_info" column="photo_info"/>
+	<result property="nation_cd" column="nation_cd"/>
+	<result property="nation_name" column="nation_name"/>
+	<result property="student_sts_cd" column="student_sts_cd"/>
+	<result property="student_sts_name" column="user_sts_name"/>
+	<result property="student_nick_name" column="student_nick_name"/>
+	<result property="authority" column="authority"/>
+	<result property="reg_type_cd" column="reg_type_cd"/>
+	<result property="reg_etc" column="reg_etc"/>
+	<result property="reg_date" column="reg_date"/>
+	<result property="cert_count" column="cert_count"/>
+	</resultMap>
+	
+	<resultMap type="com.icerti.ezcerti.domain.UserInfo" id="getUserInfo">
+	<id property="row_no" column="row_no"/>
+	<result property="univ_cd" column="univ_cd"/>
+	<result property="user_no" column="user_no"/>
+	<result property="coll_cd" column="coll_cd"/>
+	<result property="dept_cd" column="dept_cd"/>
+	<result property="coll_name" column="coll_name"/>
+	<result property="dept_name" column="dept_name"/>
+	<result property="user_name" column="user_name"/>
+	<result property="grade_cd" column="grade_name"/>
+	<result property="user_passwd" column="user_passwd"/>
+	<result property="user_status" column="user_status"/>
+	<result property="hp_no" column="hp_no"/>
+	<result property="email_addr" column="email_addr"/>
+	<result property="photo_info" column="photo_info"/>
+	<result property="nation_cd" column="nation_name"/>
+	<result property="authority" column="authority"/>
+	<result property="passwd_mod_date" column="passwd_mod_date"/>
+	<result property="user_type" column="user_type"/>
+	<result property="reg_etc" column="reg_etc"/>
+	<result property="reg_date" column="reg_date"/>
+	</resultMap>
+	
+	<resultMap type="com.icerti.ezcerti.domain.Attendmaster" id="getAttendmaster">
+	<id property="univ_cd" column="univ_cd"/>
+	<result property="row_no" column="row_no"/>
+	<result property="term_cd" column="term_cd"/>
+	<result property="subject_cd" column="subject_cd"/>
+	<result property="subject_div_cd" column="subject_div_cd"/>
+	<result property="classday_no" column="classday_no"/>
+	<result property="classhour_start_time" column="classhour_start_time"/>
+	<result property="classhour_end_time" column="classhour_end_time"/>
+	<result property="prof_no" column="prof_no"/>
+	<result property="class_cd" column="class_cd"/>
+	<result property="classday" column="classday"/>
+	<result property="class_name" column="class_name"/>
+	<result property="classday_name" column="classday_name"/>
+	<result property="classhour_name" column="classhour_name"/>
+	<result property="prof_name" column="prof_name"/>
+	<result property="prof_coll_name" column="prof_coll_name"/>
+	<result property="prof_dept_name" column="prof_dept_name"/>
+	<result property="attendee_cnt" column="attendee_cnt"/>
+	<result property="attend_proc_cnt" column="attend_proc_cnt"/>
+	<result property="attend_present_cnt" column="attend_present_cnt"/>
+	<result property="attend_late_cnt" column="attend_late_cnt"/>
+	<result property="attend_absent_cnt" column="attend_absent_cnt"/>
+	<result property="attend_off_cnt" column="attend_off_cnt"/>
+	<result property="attend_quit_cnt" column="attend_quit_cnt"/>
+	<result property="attend_auth_cnt" column="attend_auth_cnt"/>
+	<result property="classroom_no" column="classroom_no"/>
+	<result property="class_cert_no" column="class_cert_no"/>
+	<result property="class_cert_time" column="class_cert_time"/>
+	<result property="class_cert_issue_time" column="class_cert_issue_time"/>
+	<result property="class_prog_cd" column="class_prog_cd"/>
+	<result property="class_type_cd" column="class_type_cd"/>
+	<result property="class_sts_cd" column="class_sts_cd"/>
+	<result property="cert_sts_cd" column="cert_sts_cd"/>
+	<result property="attend_auth_cd" column="attend_auth_cd"/>
+	<result property="cert_type" column="cert_type"/>
+	<result property="before_class_cd" column="before_class_cd"/>
+	<result property="class_prog_name" column="class_prog_name"/>
+	<result property="class_type_name" column="class_type_name"/>
+	<result property="class_sts_name" column="class_sts_name"/>
+	<result property="cert_sts_name" column="cert_sts_name"/>
+	<result property="attend_auth_name" column="attend_auth_name"/>
+	<result property="reg_type_cd" column="reg_type_cd"/>
+	<result property="class_adm_cd" column="class_adm_cd"/>
+	<result property="reg_etc" column="reg_etc"/>
+	<result property="reg_date" column="reg_date"/>
+	</resultMap>
+	<resultMap type="com.icerti.ezcerti.domain.Attenddethist" id="getAttendDetail">
+	<id property="row_no" column="row_no"/>
+	<result property="univ_cd" column="univ_cd"/>
+	<result property="term_cd" column="term_cd"/>
+	<result property="subject_cd" column="subject_cd"/>
+	<result property="subject_div_cd" column="subject_div_cd"/>
+	<result property="classday_no" column="classday_no"/>
+	<result property="classhour_start_time" column="classhour_start_time"/>
+	<result property="classhour_end_time" column="classhour_end_time"/>
+	<result property="prof_no" column="prof_no"/>
+	<result property="class_cd" column="class_cd"/>
+	<result property="classday" column="classday"/>
+	<result property="student_no" column="student_no"/>
+	<result property="student_name" column="student_name"/>
+	<result property="student_coll_name" column="student_coll_name"/>
+	<result property="student_dept_name" column="student_dept_name"/>
+	<result property="attend_sts_cd" column="attend_sts_cd"/>
+	<result property="attend_auth_cd" column="attend_auth_cd"/>
+	<result property="attend_auth_reason_cd" column="attend_auth_reason_cd"/>
+	<result property="attend_proc_time" column="attend_proc_time"/>
+	<result property="before_class_cd" column="before_class_cd"/>
+	<result property="reg_type_cd" column="reg_type_cd"/>
+	<result property="reg_etc" column="reg_etc"/>
+	<result property="reg_date" column="reg_date"/>
+	<result property="attend_sts_name" column="attend_sts_name"/>
+	<result property="attend_auth_name" column="attend_auth_name"/>
+	<result property="attend_auth_reason_name" column="attend_auth_reason_name"/>
+	</resultMap>
+	
+	<select id="getCurrentTerm" resultType="com.icerti.ezcerti.domain.Univ">
+	SELECT
+		*
+	FROM V_CHUL_VW_UNIV
+	WHERE UNIV_CD = #{univ_cd}
+		AND UNIV_STS_CD = #{univ_sts_cd}
+		AND ROWNUM = 1				
+	ORDER BY TERM_CD
+	</select>
+
+	<select id="getActivityTerm" resultType="com.icerti.ezcerti.domain.Univ">
+		SELECT *
+		  FROM V_CHUL_VW_UNIV
+		 WHERE UNIV_CD = #{univ_cd}
+		   AND UNIV_STS_CD = #{univ_sts_cd}
+	</select>
+		
+	<select id="getLastTerm" resultType="com.icerti.ezcerti.domain.Univ">
+	SELECT
+		*
+	FROM V_CHUL_VW_UNIV
+	WHERE UNIV_CD = #{univ_cd}
+		AND ROWNUM = 1				
+	ORDER BY YEAR DESC, TERM_CD DESC
+	</select>
+	
+	<select id="getTermList" resultType="com.icerti.ezcerti.domain.Univ">
+	SELECT YEAR, TERM_CD, TERM_NAME
+	FROM V_CHUL_VW_UNIV
+	WHERE UNIV_CD=#{univ_cd}
+	<!-- AND year=#{year} -->		
+	ORDER BY year desc, term_cd	desc
+	</select>
+	
+	<select id="getCollList" resultType="com.icerti.ezcerti.domain.Coll">
+	SELECT COLL_CD, COLL_NAME 
+	FROM V_CHUL_VW_COLL
+	WHERE UNIV_CD=#{univ_cd} 
+		AND year=#{year}
+		AND TERM_CD=#{term_cd}
+	ORDER BY COLL_NAME ASC
+	</select>
+	
+	<select id="getDeptList" resultType="com.icerti.ezcerti.domain.Dept">
+	SELECT DEPT_CD, DEPT_NAME 
+	FROM V_CHUL_VW_DEPT
+	WHERE UNIV_CD=#{univ_cd} 
+		AND year=#{year}
+		AND TERM_CD=#{term_cd}
+		AND COLL_CD=#{coll_cd}
+	</select>
+	
+	<select id="getProfTermList" parameterType="map" resultMap="getProfTerm">
+	SELECT YEAR, TERM_CD, TERM_NAME
+	FROM V_CHUL_VW_UNIV
+	WHERE UNIV_CD=#{univ_cd}
+	ORDER BY year desc, term_cd	desc
+	</select>
+	
+	<select id="getStudentTermList" parameterType="map" resultMap="getStudentTerm">
+	SELECT YEAR, TERM_CD, TERM_NAME
+	FROM V_CHUL_VW_UNIV
+	WHERE UNIV_CD=#{univ_cd}
+	ORDER BY year desc, term_cd	desc
+	
+	</select>
+	
+	<select id="getProfInfo" resultMap="getProf">
+	SELECT C1.CODE_NAME AS PROF_STS_NAME, 
+		C2.CODE_NAME AS PROF_ADM_NAME,
+		P.UNIV_CD, P.PROF_NO, P.COLL_CD, P.DEPT_CD, P.COLL_NAME, P.DEPT_NAME, P.PROF_NAME, P.PROF_PASSWD,
+		P.HP_NO, P.EMAIL_ADDR, UI.STS_CD AS PROF_STS_CD, UI.ADM_CD AS PROF_ADM_CD, P.AUTHORITY, P.REG_ETC, P.REG_DATE
+	FROM V_CHUL_VW_PROF P, CHUL_TB_CODEMASTER C1, CHUL_TB_CODEMASTER C2, CHUL_TB_USERINFO UI
+	WHERE P.UNIV_CD = #{univ_cd}
+	AND P.PROF_NO = #{prof_no}
+	AND P.PROF_STS_CD = C1.CODE
+	AND P.PROF_ADM_CD=C2.CODE
+	AND P.PROF_NO = UI.USER_NO
+	
+	</select>
+	
+	<select id="getStudentInfo" parameterType="map" resultMap="getStudent">
+	SELECT 
+		A.CODE_NAME AS GRADE_NAME, B.CODE_NAME AS NATION_NAME, C.CODE_NAME AS USER_STS_NAME, 
+		S.*, CERT.CERT_COUNT 
+	FROM V_CHUL_VW_STUDENT S, 
+		CHUL_TB_CODEMASTER A, 
+		CHUL_TB_CODEMASTER B, 
+		CHUL_TB_CODEMASTER C, 
+		CHUL_TB_STUDENT_CERT_COUNT CERT
+	WHERE UNIV_CD=#{univ_cd}
+		AND S.STUDENT_NO=#{student_no}
+		AND S.STUDENT_NO=CERT.STUDENT_NO(+)
+		AND S.STUDENT_GRADE_CD=A.CODE
+		AND S.NATION_CD=B.CODE
+		AND S.STUDENT_STS_CD=C.CODE
+	</select> 
+	
+	<select id="getAttendmaster" resultType="com.icerti.ezcerti.domain.Attendmaster">
+	SELECT
+		<choose>
+			<when test="globalMakLesson != null and globalMakLesson.equalsIgnoreCase('Y') and globalMakLessonLimit != null and globalMakLessonLimit.equalsIgnoreCase('0')">
+				'Y' AS CLASSOFF_YN,
+			</when>
+			<when test="globalMakLesson != null and globalMakLesson.equalsIgnoreCase('Y') and globalMakLessonLimit != null and !globalMakLessonLimit.equalsIgnoreCase('0')">
+				<![CDATA[
+				CASE WHEN (TO_DATE(TO_CHAR(SYSDATE, 'YYYYMMDD'), 'YYYYMMDD') - TO_DATE(TO_CHAR(A.CLASSDAY, 'YYYYMMDD'), 'YYYYMMDD')) >= #{globalMakLessonLimit} THEN 'Y'
+					ELSE 'N' 
+				END AS CLASSOFF_YN,
+				]]>			
+			</when>
+			<otherwise>
+				'N' AS CLASSOFF_YN,
+			</otherwise>
+		</choose>
+		B.CODE_NAME AS CLASS_PROG_NAME,
+		C.CODE_NAME AS CLASS_TYPE_NAME, 
+		D.CODE_NAME AS CLASS_STS_NAME,
+		E.CODE_NAME AS CERT_STS_NAME, 
+		F.CODE_NAME AS ATTEND_AUTH_NAME,  
+		(SELECT (TO_CHAR(DECODE(A.CLASS_TYPE_CD, 'G019C003', BEFORE_CLASSDAY, CLASSDAY),'IW') - TO_CHAR(TERM_START_DATE,'IW') + 1) FROM CHUL_TB_UNIV WHERE UNIV_STS_CD = 'G004C001') CURR_WEEK,	
+		A.*
+	FROM
+		(SELECT * 
+		FROM V_CHUL_VW_ATTENDMASTER
+		WHERE CLASS_CD=#{class_cd}
+		AND to_char(classday, 'YYYY-MM-DD')=#{classday}
+		AND CLASSHOUR_START_TIME=#{classhour_start_time}) A, CHUL_TB_CODEMASTER B, CHUL_TB_CODEMASTER C, CHUL_TB_CODEMASTER D, CHUL_TB_CODEMASTER E, CHUL_TB_CODEMASTER F
+	WHERE A.CLASS_PROG_CD=B.CODE
+	AND A.CLASS_TYPE_CD=C.CODE
+	AND A.CLASS_STS_CD=D.CODE
+	AND A.CERT_STS_CD=E.CODE
+	AND A.ATTEND_AUTH_CD=F.CODE
+	AND ROWNUM = 1
+	</select>
+	
+	<select id="isUninterruptLecture" resultType="java.lang.Integer">
+	<![CDATA[
+	SELECT COUNT(*) AS CNT
+	FROM V_CHUL_VW_ATTENDMASTER
+	WHERE SUBJECT_CD = #{subject_cd}
+	AND SUBJECT_DIV_CD = #{subject_div_cd}
+	AND PROF_NO = #{prof_no}
+	AND TO_CHAR(CLASSDAY, 'YYYY-MM-DD') = #{classday}
+	AND (CLASSHOUR_START_TIME > #{classhour_start_time} OR CLASSHOUR_START_TIME < #{classhour_start_time})
+	]]>
+	</select>
+	
+	<select id="getAttendDetailList" resultType="com.icerti.ezcerti.domain.Attenddethist">
+	SELECT
+	    C1.CODE_NAME AS ATTEND_STS_NAME,
+	    C2.CODE_NAME AS ATTEND_AUTH_NAME,
+	    C3.CODE_NAME AS ATTEND_AUTH_REASON_NAME,
+	    ABS_CNT.ABSENCE_CNT AS ABS_CNT,
+	    ROWNUM AS row_no,
+	    B.*
+	FROM
+	(
+	    SELECT
+	        A.UNIV_CD, A.YEAR, A.TERM_CD, A.SUBJECT_CD, A.SUBJECT_DIV_CD, 
+	        A.CLASSDAY, A.CLASSHOUR_START_TIME, A.CLASSHOUR_END_TIME, 
+	        A.PROF_NO, A.CLASS_CD,
+	        A.STUDENT_NO, A.STUDENT_NAME, A.COLL_NAME AS STUDENT_COLL_NAME, A.DEPT_NAME AS STUDENT_DEPT_NAME,
+	        A.CLASS_TYPE_CD, A.STUDENT_GRADE, A.DEPT_CD,
+	        NVL(ATTEND_STS_CD, 'G023C001') AS ATTEND_STS_CD,
+	        NVL(ATTEND_AUTH_CD, 'G022C001') AS ATTEND_AUTH_CD,
+	        NVL(ATTEND_AUTH_REASON_CD, 'G024C001') AS ATTEND_AUTH_REASON_CD,
+	        ATTEND_PROC_TIME, ATTEND_AUTH_PROC_TIME, BEFORE_CLASSDAY,
+	        A.STUDENT_STS_CD,
+	        A.STATUS_CHANGE_DATE, A.IPHAK_YEAR, A.STUDENT_IMG,
+	        CASE WHEN GG.STUDENT_NO IS NOT NULL THEN 'GONGGYUL' 
+	         ELSE AH.REG_ETC
+	    	END AS REG_ETC
+	    FROM
+	    (
+	        SELECT 
+	            AM.UNIV_CD, AM.YEAR, AM.TERM_CD, AM.SUBJECT_CD, AM.SUBJECT_DIV_CD, 
+	            AM.CLASSDAY, AM.CLASSHOUR_START_TIME, AM.CLASSHOUR_END_TIME, 
+	            AM.PROF_NO, AM.CLASS_CD,
+	            AD.STUDENT_NO, STD.STUDENT_NAME, STD.COLL_NAME, STD.DEPT_NAME,
+	            AM.CLASS_TYPE_CD, STD.STUDENT_GRADE, STD.DEPT_CD, STD.STUDENT_STS_CD,
+	            STD.STATUS_CHANGE_DATE, STD.IPHAK_YEAR, STD.STUDENT_IMG
+	        FROM    
+	            CHUL_TB_ATTENDMASTER_ADDINFO AM,
+	            V_CHUL_VW_ATTENDEE AD,
+	            V_CHUL_VW_STUDENT STD
+	        WHERE  AM.CLASS_CD = #{class_cd}
+	             AND to_char(AM.classday, 'YYYY-MM-DD') = #{classday}
+	             AND AM.CLASSHOUR_START_TIME = #{classhour_start_time}             
+			<if test='!prof_no.equals("")'>
+	             AND AM.PROF_NO = #{prof_no}
+			</if>             
+	             AND AM.UNIV_CD = AD.UNIV_CD
+	             AND AM.YEAR = AD.YEAR
+	             AND AM.TERM_CD = AD.TERM_CD
+	             AND AM.SUBJECT_CD = AD.SUBJECT_CD
+	             AND AM.SUBJECT_DIV_CD = AD.SUBJECT_DIV_CD
+	             AND AD.STUDENT_NO = STD.STUDENT_NO
+				 AND (STD.STUDENT_STS_CD = 'G012C001' 
+				 		OR  STD.STUDENT_STS_CD = 'G012C002' 
+				 		OR  STD.STUDENT_STS_CD = 'G012C004' 
+				 		OR  STD.STUDENT_STS_CD = 'G012C005' 
+				 		OR  STD.STUDENT_STS_CD = 'G012C006'
+				 		OR  STD.STUDENT_STS_CD = 'G012C007'  
+				 		OR  STD.STUDENT_STS_CD = 'G012C008' 
+				 		OR  STD.STUDENT_STS_CD = 'G012C009')
+	     ) A
+			LEFT OUTER JOIN  (
+								 SELECT
+					          	 	 * 
+					          	 FROM V_CHUL_VW_GONGGYEOL
+							     WHERE 1=1
+							       AND YEAR = #{year}
+							       AND TERM_CD = #{term_cd}
+							       AND SUBJECT_CD = #{subject_cd}
+							       AND SUBJECT_DIV_cD = #{subject_div_cd}
+							       AND CLASSHOUR_START_TIME = #{classhour_start_time}
+							       AND NVL(CANCEL_GB,'0') ='0'
+					          ) GG
+			ON A.STUDENT_NO = GG.STUDENT_NO
+			AND TO_CHAR(A.CLASSDAY, 'YYYY-MM-DD') = TO_CHAR(GG.GONGGYEOL_DT, 'YYYY-MM-DD')
+			LEFT OUTER JOIN CHUL_TB_ATTENDDETHIST AH ON
+				A.UNIV_CD = AH.UNIV_CD
+				AND A.YEAR = AH.YEAR
+				AND A.TERM_CD = AH.TERM_CD
+				AND A.SUBJECT_CD = AH.SUBJECT_CD
+				AND A.SUBJECT_DIV_CD = AH.SUBJECT_DIV_CD
+				AND A.CLASS_CD = AH.CLASS_CD
+				AND TRUNC(A.CLASSDAY) = TRUNC(AH.CLASSDAY)
+				AND A.CLASSHOUR_START_TIME = AH.CLASSHOUR_START_TIME
+				AND A.PROF_NO = AH.PROF_NO
+				AND A.STUDENT_NO = AH.STUDENT_NO
+	) B,
+		(
+	  	  SELECT a.STUDENT_NO,
+	        SUM(a.CNT) AS ABSENCE_CNT
+	      FROM
+	        (
+	        	SELECT * FROM 
+				(
+					SELECT AH.STUDENT_NO,
+					  COUNT(*) AS CNT,
+					  AH.SUBJECT_CD,
+					  AH.SUBJECT_DIV_CD,
+				      (
+				          SELECT
+				          	COUNT(*)
+				          FROM V_CHUL_VW_CLASS
+				          WHERE 1=1
+				          AND YEAR = #{year}
+				          AND SUBJECT_CD = AH.SUBJECT_CD
+				          AND SUBJECT_DIV_CD = AH.SUBJECT_DIV_CD
+				      ) AS SISU
+					FROM CHUL_TB_ATTENDDETHIST AH
+					WHERE AH.UNIV_CD        = #{univ_cd} 
+					AND AH.YEAR        = #{year}
+					AND AH.TERM_CD       = #{term_cd}
+					AND AH.SUBJECT_CD = #{subject_cd}
+					AND AH.SUBJECT_DIV_CD = #{subject_div_cd}
+					AND AH.ATTEND_STS_CD = 'G023C004'
+					AND AH.CLASS_TYPE_CD != 'G019C002'
+					AND AH.PROF_NO != '999999'
+					GROUP BY AH.STUDENT_NO,
+					  AH.SUBJECT_CD,
+					  AH.SUBJECT_DIV_CD
+				) WHERE 1=1
+				    AND CNT/SISU >= 2	
+	        ) a
+	     GROUP BY a.STUDENT_NO
+	  	) ABS_CNT,
+	    CHUL_TB_CODEMASTER C1,
+	    CHUL_TB_CODEMASTER C2,
+	    CHUL_TB_CODEMASTER C3
+	WHERE 1=1    
+		AND B.STUDENT_NO = ABS_CNT.STUDENT_NO(+)
+	    AND B.ATTEND_STS_CD = C1.CODE
+	    AND B.ATTEND_AUTH_CD = C2.CODE
+	    AND B.ATTEND_AUTH_REASON_CD = C3.CODE(+)
+	ORDER BY B.STUDENT_NAME, B.STUDENT_NO
+	</select>
+	
+	<select id="getCode" resultType="com.icerti.ezcerti.domain.Codemaster">
+	SELECT CODE, CODE_NAME 
+	FROM CHUL_TB_CODEMASTER 
+	WHERE CODE_GRP_CD=#{code_grp_cd}
+	</select>
+	
+	<select id="getLectureDetail" parameterType="map" resultType="com.icerti.ezcerti.domain.Lecture">
+	SELECT *
+	FROM V_CHUL_VW_ATTENDMASTER
+	WHERE UNIV_CD=#{univ_cd}
+		AND YEAR=#{year}
+		AND TERM_CD=#{term_cd}
+		AND CLASS_CD=#{class_cd}
+		AND CLASS_TYPE_CD='G019C001'
+		<if test='!prof_no.equals("")'>
+		AND PROF_NO=#{prof_no}
+		</if>
+		AND ROWNUM = 1
+	</select>
+	
+	<select id="getCurrentTime" resultType="java.sql.Timestamp">
+	SELECT sysdate FROM dual
+	</select>
+	
+	<select id="getCurrentTime_HH24" resultType="java.lang.String">
+	select to_char(sysdate, 'YYYYmmddHH24') from DUAL
+	</select>
+	
+	<select id="getCurrentDate" resultType="String">
+	SELECT to_char(sysdate, 'YYYY-MM-DD') FROM dual
+	</select>
+	
+	<select id="getUniv" parameterType="map" resultType="com.icerti.ezcerti.domain.Univ">
+	SELECT CODE1.CODE_NAME AS UNIV_STS_NAME, UNIV.*
+	FROM 
+		(SELECT *
+		FROM V_CHUL_VW_UNIV
+		WHERE UNIV_CD = #{univ_cd}
+		AND YEAR=#{year}
+		AND TERM_CD = #{term_cd}) UNIV, CHUL_TB_CODEMASTER CODE1
+	WHERE UNIV.UNIV_STS_CD = CODE1.CODE
+	</select>
+	
+	<select id="getClassday" parameterType="map" resultType="com.icerti.ezcerti.domain.Classday">
+	SELECT *
+	FROM V_CHUL_VW_CLASSDAY
+	WHERE univ_cd=#{univ_cd}
+		AND year=#{year}
+		AND term_cd=#{term_cd}
+		AND to_char(classday, 'YYYY-MM-DD')=#{classday}
+	</select>
+	
+	<select id="getProf" parameterType="map" resultType="com.icerti.ezcerti.domain.Prof">
+	SELECT *
+	FROM V_CHUL_VW_PROF
+	WHERE univ_cd=#{univ_cd}
+	AND coll_cd=#{coll_cd}
+	AND dept_cd=#{dept_cd}
+	</select>
+	
+	<select id="loginAdminInfo" resultType="com.icerti.ezcerti.domain.Admin">
+	SELECT *
+	FROM V_CHUL_VW_ADMIN
+	WHERE univ_cd=#{univ_cd}
+	AND admin_no=#{admin_no}
+	</select>
+	
+	<select id="loginProfInfo" resultType="com.icerti.ezcerti.domain.Prof">
+	SELECT *
+	FROM V_CHUL_VW_PROF
+	WHERE univ_cd=#{univ_cd}
+	AND prof_no=#{prof_no}
+	</select>
+	
+	<select id="loginHsuInfo" parameterType="java.lang.String" resultType="java.lang.String">
+	SELECT distinct person_num || '|' || sosok
+	FROM V_CHUL_LOGIN
+	WHERE user_id in (
+		SELECT user_id FROM V_CHUL_LOGIN WHERE person_num=#{person_num}
+	) AND length(person_num) >= 5
+	</select>
+	
+	<select id="loginStudentInfo" resultType="com.icerti.ezcerti.domain.Student">
+	SELECT *
+	FROM V_CHUL_VW_STUDENT
+	WHERE univ_cd=#{univ_cd}
+	AND student_no=#{student_no}
+	</select>
+	
+	<select id="loginUserInfo" resultType="com.icerti.ezcerti.domain.UserInfo">
+	SELECT *
+	FROM V_CHUL_VW_USERINFO
+	WHERE UNIV_CD = #{univ_cd} 
+		AND USER_NO = #{user_no}
+	</select>
+	
+	<select id="findUserPassword" resultType="com.icerti.ezcerti.domain.UserInfo">
+	SELECT *
+	FROM
+		(SELECT *
+		FROM V_CHUL_VW_USERINFO
+		WHERE user_no=#{user_no}
+		AND user_name=#{user_name}
+		AND email_addr=#{email_addr}
+		)
+	WHERE ROWNUM=1
+	</select>
+	
+	<update id="updateUserPassword" parameterType="com.icerti.ezcerti.domain.UserInfo">
+	UPDATE CHUL_TB_USERINFO
+	SET user_passwd=#{user_passwd},
+		passwd_mod_date=sysdate
+	WHERE user_no=#{user_no}
+	</update>
+	
+	<select id="findStudentPassword" resultType="com.icerti.ezcerti.domain.Student">
+	SELECT *
+	FROM
+		(SELECT *
+		FROM V_CHUL_VW_STUDENT
+		WHERE student_no=#{student_no}
+		AND student_name=#{student_name}
+		AND email_addr=#{email_addr}
+		ORDER BY student_no DESC)
+	WHERE ROWNUM=1
+	</select>
+	
+	<update id="updateStudentPassword" parameterType="com.icerti.ezcerti.domain.Student">
+	UPDATE CHUL_TB_USERINFO
+	SET USER_PASSWD = #{student_passwd},
+		PASSWD_MOD_DATE = SYSDATE
+	WHERE USER_NO = #{student_no}
+	</update>
+	
+	<select id="findProfPassword" resultType="com.icerti.ezcerti.domain.Prof">
+	SELECT *
+	FROM
+		(SELECT *
+		FROM V_CHUL_VW_PROF
+		WHERE prof_no=#{prof_no}
+		AND prof_name=#{prof_name}
+		AND email_addr=#{email_addr}
+		<!-- ORDER BY term_cd DESC -->
+		)
+	WHERE ROWNUM=1
+	</select>
+	
+	<update id="updateProfPassword" parameterType="com.icerti.ezcerti.domain.Prof">
+	UPDATE CHUL_TB_USERINFO
+	SET USER_PASSWD = #{prof_passwd},
+		PASSWD_MOD_DATE = SYSDATE
+	WHERE USER_NO = #{prof_no}
+	</update>
+	
+	<select id="getClasstime" resultType="int">
+	SELECT class_end_time-class_start_time AS classtime
+	FROM
+		(SELECT classhour AS class_end_time
+			FROM V_CHUL_VW_CLASSHOUR
+			WHERE classhour_end_time=
+				(SELECT classhour_end_time
+					FROM V_CHUL_VW_CLASS
+					WHERE univ_cd=#{univ_Cd}
+						AND year=#{year}
+						AND term_cd=#{term_cd}
+						AND class_cd=#{class_cd}
+				)
+		),
+		(SELECT classhour AS class_start_time
+			FROM V_CHUL_VW_CLASSHOUR
+			WHERE classhour_start_time=
+				(SELECT classhour_start_time
+					FROM V_CHUL_VW_CLASS
+					WHERE univ_cd=#{univ_Cd}
+						AND year=#{year}
+						AND term_cd=#{term_cd}
+						AND class_cd=#{class_cd}
+				)
+		)
+	</select>
+	
+	<select id="checkClasstime" resultType="com.icerti.ezcerti.domain.Classhour" parameterType="com.icerti.ezcerti.domain.Classhour">
+	SELECT *
+	FROM V_CHUL_VW_CLASSHOUR
+	WHERE classhour=
+		(SELECT classhour
+		FROM V_CHUL_VW_CLASSHOUR
+		WHERE univ_cd=#{univ_cd}
+			and year=#{year}
+			and term_cd=#{term_cd}
+			and classhour_end_time=#{classhour_end_time}
+		)
+		+#{classhour}
+	</select>
+	
+	<select id="getAttenddethist" resultType="com.icerti.ezcerti.domain.Attenddethist">
+	SELECT *
+	FROM CHUL_TB_attenddethist
+	WHERE univ_cd=#{univ_cd}
+		AND year=#{year}
+		AND term_cd=#{term_cd}
+		AND student_no=#{student_no}
+		AND class_cd=#{class_cd}
+		AND to_char(classday, 'YYYY-MM-DD')=#{classday}
+		AND classhour_start_time=#{classhour_start_time}
+	</select>
+	
+	<select id="getLoginUserInfo" parameterType="map" resultType="com.icerti.ezcerti.domain.UserInfo">
+	SELECT * 
+	FROM CHUL_TB_USERINFO
+	WHERE univ_cd = #{univ_cd}
+	</select>
+	
+	<select id="getPersonNum" parameterType="java.lang.String" resultType="java.lang.String">
+	select person_num from webdb.member@hsdb1.world where user_id=#{user_id} 
+	</select>
+	
+	<select id="getUserIdFromPersonNum" parameterType="java.lang.String" resultType="java.lang.String">
+	select user_id from webdb.member@hsdb1.world where person_num=#{person_num} 
+	</select>
+	
+	<select id="getPersonNumOfLogin" parameterType="map" resultType="java.lang.String">
+	select * from (
+	select person_num from V_CHUL_LOGIN where user_id=#{user_id} and password = #{password}
+	union 
+	select admin_no as person_num from chul_tb_admin where admin_no = #{user_id} and admin_passwd = #{password1} 
+	order by person_num desc
+	) where rownum = 1
+	</select>
+	
+	<!-- Insert Log Info -->
+	<insert id="insertLogInfo" parameterType="map">
+	INSERT INTO CHUL_TB_LOG
+		(type, class_cd, classday, prof_no, student_no, msg, reg_date)
+	VALUES
+		(#{type}, #{class_cd}, #{classday}, #{prof_no}, #{student_no}, #{msg}, sysdate)	
+	</insert>
+	
+	<select id="getUserLoinInfo" parameterType="map" resultType="com.icerti.ezcerti.domain.UserInfo">
+		<choose>
+			<when test="!univCode.equals('KDU00001')">
+				SELECT 
+					user_no, user_id, user_type, user_passwd
+				FROM V_CHUL_LOGIN
+				WHERE 1=1
+					<choose>
+						<when test="univCode != null and univCode.equals('73113000')">
+							<choose>
+								<when test="loginPath != null and loginPath.equals('PORTAL')">
+									AND USER_ID = #{loginId}
+									AND USER_PASSWD = #{loginPwd}
+								</when>
+								<otherwise>
+									AND USER_NO = #{loginId}
+								</otherwise>
+							</choose>		
+						</when>
+						<when test="univCode != null and univCode.equals('30000000')">
+							<choose>
+								<when test="loginPath != null and loginPath.equals('PORTAL')">
+									AND USER_ID = #{loginId}
+									AND USER_PASSWD = #{loginPwd}
+								</when>
+								<otherwise>
+									AND USER_NO = #{loginId}
+									<if test="loginPwd != null and !loginPwd.equals('')">
+										AND (SELECT DMZ.SF_GET_PASSWORD(#{loginId}, '1') FROM DUAL)  = #{loginPwd}
+									</if>
+								</otherwise>
+							</choose>		
+						</when>
+						
+						<when test="univCode != null and univCode.equals('73113000')">
+							<choose>
+								<when test="loginPath != null and loginPath.equals('PORTAL')">
+									AND USER_ID = #{loginId}
+									AND USER_PASSWD = #{loginPwd}
+								</when>
+								<otherwise>
+									AND USER_NO = #{loginId}
+								</otherwise>
+							</choose>		
+						</when>
+					</choose>
+			</when>
+			<otherwise>
+				SELECT 
+					user_no, user_id, user_type, user_passwd, 
+					UPATIS_COMMON.SF_CS_VALID_PASSWORD(#{loginId}, #{loginPwd}) AS REG_ETC
+				FROM V_CHUL_LOGIN
+				WHERE 1=1
+			    AND USER_NO = #{loginId}
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="sendSMS" parameterType="map">	
+	</insert>
+
+	<select id="getClasshourInfo" parameterType="map" resultType="com.icerti.ezcerti.domain.Classhour">
+		SELECT *
+		  FROM V_CHUL_VW_CLASSHOUR A
+		 WHERE UNIV_CD = #{univ_cd}
+		   AND YEAR = #{year}
+		   AND TERM_CD = #{term_cd}
+		 ORDER BY CLASSHOUR_START_TIME ASC
+	</select>
+	
+</mapper>

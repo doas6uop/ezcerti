@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.icerti.ezcerti.prof.dao.ProfClaimMapper">
+
+<select id="getProfClaimList" parameterType="map" resultType="com.icerti.ezcerti.domain.Claim">
+SELECT *
+FROM
+	(SELECT ROWNUM row_no, 
+			c1.code_name AS claim_sts_name, 
+			c2.code_name AS before_claim_name, 
+			c3.code_name AS ask_claim_name,
+			c4.code_name AS reply_claim_name, 
+			a.*
+	FROM
+		(SELECT claim_no, univ_cd, year, term_cd, class_cd, to_char(classday, 'YYYY-MM-DD') as classday,
+		        classhour_start_time, class_name, prof_no, prof_name, student_no, student_name, 
+		        student_coll_name, student_dept_name, before_claim_cd, ask_claim_cd, reply_claim_cd, claim_sts_cd, ask_claim_content,
+		        reply_claim_content, ask_claim_time, reply_claim_time, reg_etc, reg_date
+		FROM CHUL_TB_claim
+		WHERE univ_cd=#{univ_cd}
+		AND year=#{year}
+		AND term_cd=#{term_cd}
+		AND prof_no=#{prof_no}
+		<if test='!class_cd.equals("")'>
+		AND class_cd=#{class_cd}
+		</if>
+		<if test='!claim_sts_cd.equals("")'>
+		AND claim_sts_cd=#{claim_sts_cd}
+		</if>
+		ORDER BY claim_no desc) a, CHUL_TB_codemaster c1, CHUL_TB_codemaster c2, CHUL_TB_codemaster c3, CHUL_TB_codemaster c4
+	WHERE a.claim_sts_cd=c1.code
+	AND a.before_claim_cd=c2.code
+	AND a.ask_claim_cd=c3.code
+	AND a.reply_claim_cd=c4.code(+)
+<![CDATA[
+	AND ROWNUM <= #{endRow}) a
+WHERE row_no >= #{startRow}
+]]>
+</select>
+
+<select id="getProfImproveList" parameterType="map" resultType="com.icerti.ezcerti.domain.Claim">
+SELECT *
+FROM
+	(SELECT ROWNUM row_no, 
+			a.*
+	FROM
+		(SELECT improve_no as claim_no, univ_cd, year, term_cd, class_cd, to_char(classday, 'YYYY-MM-DD') as classday,
+		        classhour_start_time, class_name, prof_no, prof_name, class_improve_content as ask_claim_content,
+		        reg_etc, reg_date
+		FROM CHUL_TB_IMPROVE
+		WHERE univ_cd=#{univ_cd}
+		AND year=#{year}
+		AND term_cd=#{term_cd}
+		AND prof_no=#{prof_no}
+		<if test='!class_cd.equals("")'>
+		AND class_cd=#{class_cd}
+		</if>
+		ORDER BY claim_no desc) a
+<![CDATA[
+	WHERE ROWNUM <= #{endRow}) a
+WHERE row_no >= #{startRow}
+]]>
+</select>
+
+<select id="getProfClaimListCount" parameterType="map" resultType="int">
+SELECT COUNT(*)
+FROM CHUL_TB_claim
+WHERE univ_cd=#{univ_cd}
+AND year=#{year}
+AND term_cd=#{term_cd}
+AND prof_no=#{prof_no}
+<if test='!class_cd.equals("")'>
+AND class_cd=#{class_cd}
+</if>
+<if test='!claim_sts_cd.equals("")'>
+AND claim_sts_cd=#{claim_sts_cd}
+</if>
+</select>
+
+<select id="getProfImproveListCount" parameterType="map" resultType="int">
+SELECT COUNT(*)
+FROM CHUL_TB_IMPROVE
+WHERE univ_cd=#{univ_cd}
+AND year=#{year}
+AND term_cd=#{term_cd}
+AND prof_no=#{prof_no}
+<if test='!class_cd.equals("")'>
+AND class_cd=#{class_cd}
+</if>
+</select>
+
+<select id="getProfClaimView" resultType="com.icerti.ezcerti.domain.Claim">
+SELECT c1.code_name AS claim_sts_name, 
+	   c2.code_name AS before_claim_name, 
+	   c3.code_name AS ask_claim_name,
+	   c4.code_name AS reply_claim_name,  
+	   a.*
+FROM
+	(SELECT *
+	FROM CHUL_TB_claim
+	WHERE univ_cd=#{univ_cd}
+	AND year=#{year}
+	AND claim_no=#{claim_no}) a, CHUL_TB_codemaster c1, CHUL_TB_codemaster c2, CHUL_TB_codemaster c3, CHUL_TB_codemaster c4
+WHERE a.claim_sts_cd=c1.code
+AND a.before_claim_cd=c2.code
+AND a.ask_claim_cd=c3.code	
+AND a.reply_claim_cd=c4.code(+)
+</select>
+
+<select id="getProfImproveView" resultType="com.icerti.ezcerti.domain.Claim">
+SELECT a.class_improve_content as ask_claim_content, a.classhour_start_time, a.class_name, a.classday, a.prof_name
+FROM
+	(SELECT *
+	FROM CHUL_TB_IMPROVE
+	WHERE univ_cd=#{univ_cd}
+	AND year=#{year}
+	AND improve_no=#{claim_no}) a
+</select>
+
+<update id="updateProfClaim">
+UPDATE CHUL_TB_claim
+SET reply_claim_cd=#{reply_claim_cd},
+	reply_claim_content=#{reply_claim_content},
+	claim_sts_cd=#{claim_sts_cd},
+	reply_claim_time = sysdate
+WHERE univ_cd=#{univ_cd} 
+AND year=#{year}
+AND claim_no=#{claim_no}
+</update>
+
+<select id="getClassInfoFlag" parameterType="map" resultType="String">
+	SELECT
+		CASE WHEN COUNT(*) > 0 THEN 'Y'
+		     ELSE 'N'
+		END AS class_flag 
+	FROM CHUL_TB_ATTENDMASTER_ADDINFO
+	WHERE 1=1
+	  AND CLASS_CD = #{class_cd}
+	  AND TRUNC(CLASSDAY) = #{classday}
+	  AND CLASS_TYPE_CD != 'G019C002'
+	  AND CLASSHOUR_START_TIME=#{classhour_start_time}
+</select>
+
+</mapper>

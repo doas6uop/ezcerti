@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.icerti.ezcerti.prof.dao.ProfInfoMapper">
+
+<!-- 2014.12.30
+	- CHUL_TB_prof를 CHUL_TB_userinfo로 변경
+	- prof_passwd를 user_passwd로 변경
+	- prof_no를 user_no로 변경
+-->
+<update id="updateProfInfo" parameterType="com.icerti.ezcerti.domain.Prof">
+UPDATE 
+	<!-- CHUL_TB_prof -->
+	CHUL_TB_userinfo
+SET hp_no=#{hp_no}, 
+	email_addr=#{email_addr} 
+<if test='prof_passwd!=null and !prof_passwd.equals("")'>
+	<!--,prof_passwd=#{prof_passwd} -->
+	,user_passwd=#{prof_passwd}
+	,passwd_mod_date=SYSDATE
+</if>
+WHERE univ_cd=#{univ_cd}
+<!-- AND prof_no=#{prof_no} -->
+AND user_no=#{prof_no}
+</update>
+
+</mapper>

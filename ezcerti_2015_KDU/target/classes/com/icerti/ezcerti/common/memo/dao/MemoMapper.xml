@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.icerti.ezcerti.common.memo.dao.MemoMapper">
+
+	<resultMap type="com.icerti.ezcerti.domain.Memo" id="getMemo">
+		<id property="memo_no" column="memo_no"/>
+		<result property="univ_cd" column="univ_cd"/>
+		<result property="message" column="message"/>
+		<result property="from_user_no" column="from_user_no"/>
+		<result property="from_user_name" column="from_user_name"/>
+		<result property="to_user_no" column="to_user_no"/>
+		<result property="to_user_name" column="to_user_name"/>
+		<result property="reg_date" column="reg_date"/>
+		<result property="receive_date" column="receive_date"/>
+	</resultMap>
+
+	<!-- 메모 목록 수 -->
+	<select id="getMemoListCount" parameterType="map" resultType="int">
+	<![CDATA[	
+		SELECT 
+			COUNT(*)
+		FROM 
+			CHUL_TB_memo
+		WHERE univ_cd = #{univ_cd}
+  	]]>
+	<if test='!to_user_no.equals("")'>
+			AND (to_user_no = #{to_user_no} OR from_user_no = #{to_user_no})
+	</if>
+	<if test='!searchValue.equals("")'>
+		<choose>
+			<when test='searchItem.equals("sender")'>
+			AND from_user_name LIKE '%' || #{searchValue} || '%'
+			</when>
+			<when test='searchItem.equals("receiver")'>
+			AND to_user_name LIKE '%' || #{searchValue} || '%'
+			</when>
+			<when test='searchItem.equals("message")'>
+			AND message LIKE '%' || #{searchValue} || '%'
+			</when>
+		</choose>
+	</if>
+	</select>
+
+	<!-- 게시판 목록 -->
+	<select id="getMemoList" parameterType="map" resultMap="getMemo">
+	<![CDATA[
+		SELECT a.* 
+		FROM (
+			SELECT *
+			FROM (
+				SELECT ROWNUM row_no, a.* 
+				FROM ( 
+					SELECT
+	        		 	*
+					FROM CHUL_TB_memo a
+					WHERE univ_cd = #{univ_cd}
+					ORDER BY reg_date DESC) a
+				WHERE 1=1	
+	]]>
+			<if test='!to_user_no.equals("")'>
+					AND (to_user_no = #{to_user_no} OR from_user_no = #{to_user_no})
+			</if>
+			<if test='!searchValue.equals("")'>
+				<choose>
+					<when test='searchItem.equals("sender")'>
+					AND from_user_name LIKE '%' || #{searchValue} || '%'
+					</when>
+					<when test='searchItem.equals("receiver")'>
+					AND to_user_name LIKE '%' || #{searchValue} || '%'
+					</when>
+					<when test='searchItem.equals("message")'>
+					AND message LIKE '%' || #{searchValue} || '%'
+					</when>
+				</choose>
+			</if>
+    <![CDATA[
+        		 AND ROWNUM <= #{endRow})
+		WHERE row_no >= #{startRow}) a
+    ]]>    
+	</select>
+
+	<!-- 메모 상세 조회 -->
+	<select id="getMemoView" parameterType="map" resultMap="getMemo">
+		SELECT
+			<!--  
+			memo_no, univ_cd, message, 
+			from_user_no, from_user_name, to_user_no, to_user_name,
+			to_char(reg_date, 'yyyy-mm-dd hh24:mi') as reg_date, 
+			to_char(receive_date, 'yyyy-mm-dd hh24:mi') as receive_date
+			-->
+			*
+		FROM CHUL_TB_memo 
+		WHERE univ_cd = #{univ_cd}
+			AND memo_no = #{memo_no}
+	</select>
+	
+	<!-- 메모 삭제 -->
+	<delete id="deleteMemoInfo">
+		DELETE FROM 
+			CHUL_TB_memo
+		WHERE univ_cd = #{univ_cd}
+			AND memo_no = #{memo_no}		
+	</delete>
+
+	<!-- 메모 등록 -->
+	<insert id="insertMemoInfo">
+	INSERT INTO CHUL_TB_memo (
+		memo_no, univ_cd, message, 
+		from_user_no, from_user_name, to_user_no, to_user_name, reg_date, receive_date
+	)
+	VALUES (
+		(SELECT FN_GET_MEMO_NO AS memo_no FROM DUAL),
+		#{univ_cd}, #{message}, 
+		#{from_user_no}, #{from_user_name}, #{to_user_no}, #{to_user_name}, sysdate, null
+	)
+	</insert>	
+
+	<!-- 메모 확인 -->
+	<update id="updateMemoInfo" parameterType="map">
+		UPDATE 
+			CHUL_TB_memo
+		SET receive_date = sysdate
+		WHERE univ_cd = #{univ_cd}
+			AND memo_no = #{memo_no}
+			AND receive_date is null
+	</update>
+</mapper>

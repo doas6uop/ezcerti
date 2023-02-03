@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.icerti.ezcerti.admin.dao.AdminAttendeeMapper">
+
+<resultMap type="com.icerti.ezcerti.domain.Student" id="getAttendee">
+	<id property="row_no" column="row_no"/>
+	<result property="univ_cd" column="univ_cd"/>
+	<result property="term_cd" column="term_cd"/>
+	<result property="student_no" column="student_no"/>
+	<result property="coll_cd" column="coll_cd"/>
+	<result property="dept_cd" column="dept_cd"/>
+	<result property="coll_name" column="coll_name"/>
+	<result property="dept_name" column="dept_name"/>
+	<result property="student_name" column="student_name"/>
+	<result property="student_grade_cd" column="student_grade_cd"/>
+	<result property="student_passwd" column="student_passwd"/>
+	<result property="hp_no" column="hp_no"/>
+	<result property="email_addr" column="email_addr"/>
+	<result property="photo_info" column="photo_info"/>
+	<result property="nation_cd" column="nation_name"/>
+	<result property="student_sts_cd" column="student_sts_name"/>
+	<result property="student_nick_name" column="student_nick_name"/>
+	<result property="authority" column="authority"/>
+	<result property="reg_type_cd" column="reg_type_cd"/>
+	<result property="reg_etc" column="reg_etc"/>
+	<result property="reg_date" column="reg_date"/>
+</resultMap>
+
+<resultMap type="com.icerti.ezcerti.domain.Lecture" id="getLecture">
+	<id property="univ_cd" column="univ_cd"/>
+	<result property="term_cd" column="term_cd"/>
+	<result property="subject_cd" column="subject_cd"/>
+	<result property="subject_div_cd" column="subject_div_cd"/>
+	<result property="classday_no" column="classday_no"/>
+	<result property="classhour_start_time" column="classhour_start_time"/>
+	<result property="classhour_end_time" column="classhour_end_time"/>
+	<result property="prof_no" column="prof_no"/>
+	<result property="class_cd" column="class_cd"/>
+	<result property="class_name" column="class_name"/>
+	<result property="classday_name" column="classday_name"/>
+	<result property="classhour_name" column="classhour_name"/>
+	<result property="prof_name" column="prof_name"/>
+	<result property="prof_coll_name" column="prof_coll_name"/>
+	<result property="prof_dept_name" column="prof_dept_name"/>
+	<result property="attendee_cnt" column="attendee_cnt"/>
+	<result property="classroom_no" column="classroom_no"/>
+	<result property="class_prog_cd" column="class_prog_cd"/>
+	<result property="reg_type_cd" column="reg_type_cd"/>
+	<result property="reg_etc" column="reg_etc"/>
+	<result property="reg_date" column="reg_date"/>
+	<result property="row_no" column="row_no"/>
+</resultMap>
+
+<select id="getLectureList" parameterType="map" resultMap="getLecture">
+<![CDATA[
+	SELECT *
+    FROM
+    	(SELECT ROWNUM row_no, A.* 
+         FROM 
+         	-- CHUL_TB_CLASS A 
+         	V_CHUL_VW_CLASS A
+         WHERE UNIV_CD=#{univ_cd}
+	         AND YEAR=#{year}
+	         AND TERM_CD=#{term_cd}
+]]>
+        <if test='!searchValue.equals("")'>
+        	<choose>
+        		<when test='item.equals("classname")'>
+                 AND CLASS_NAME LIKE '%' || #{searchValue} || '%'
+        		</when>
+        		<when test='item.equals("profname")'>
+                 AND PROF_NAME LIKE '%' || #{searchValue} || '%'
+                </when>
+        	</choose>
+        </if>
+<![CDATA[         
+         AND ROWNUM <= #{endRow})
+    WHERE row_no>=#{startRow}
+]]>   
+</select>
+
+<select id="getAttendeeList" parameterType="map" resultMap="getAttendee">
+<![CDATA[
+SELECT *
+FROM 
+(SELECT ROWNUM row_no, A.*, C1.CODE_NAME AS NATION_NAME, C2.CODE_NAME AS STUDENT_STS_NAME
+FROM
+    (SELECT DISTINCT S.STUDENT_NO, S.DEPT_NAME, S.STUDENT_NAME, S.HP_NO, S.NATION_CD, S.STUDENT_STS_CD
+     --FROM CHUL_TB_ATTENDEE A
+     --JOIN CHUL_TB_STUDENT S
+     FROM V_CHUL_VW_ATTENDEE A
+     	JOIN V_CHUL_VW_STUDENT S ON A.STUDENT_NO=S.STUDENT_NO
+     WHERE A.UNIV_CD=#{univ_cd}
+	     AND A.YEAR=#{year}
+	     AND A.TERM_CD=#{term_cd}
+	     AND A.SUBJECT_CD=#{subject_cd}
+	     AND A.SUBJECT_DIV_CD=#{subject_div_cd}
+	]]>
+<if test='!searchValue.equals("")'>
+ <choose>
+  <when test='item.equals("name")'>
+       AND S.STUDENT_NAME LIKE '%' || #{searchValue} || '%'
+  </when>
+  <when test='item.equals("code")'>
+       AND S.STUDENT_NO LIKE '%' || #{searchValue} || '%'
+      </when>
+</choose>
+</if>
+<![CDATA[  
+     ORDER BY STUDENT_NAME) A, CHUL_TB_CODEMASTER C1, CHUL_TB_CODEMASTER C2    
+WHERE A.NATION_CD=C1.CODE
+AND A.STUDENT_STS_CD=C2.CODE
+AND ROWNUM<=#{endRow})
+WHERE row_no >= #{startRow}
+]]>
+</select>
+
+<select id="getAttendeeListCount" parameterType="map" resultType="int">
+    <if test='searchValue.equals("")'>
+	SELECT COUNT(*)
+	FROM 
+		V_CHUL_VW_ATTENDEE
+	WHERE UNIV_CD=#{univ_cd}
+		AND YEAR=#{year}
+		AND TERM_CD=#{term_cd}
+		AND SUBJECT_CD=#{subject_cd}
+		AND SUBJECT_DIV_CD=#{subject_div_cd}
+    </if>
+    <if test='!searchValue.equals("")'>
+	SELECT COUNT(*)
+	FROM V_CHUL_VW_ATTENDEE A
+		JOIN V_CHUL_VW_STUDENT S ON A.STUDENT_NO=S.STUDENT_NO
+	WHERE A.UNIV_CD=#{univ_cd}
+		AND A.YEAR=#{year}
+		AND A.TERM_CD=#{term_cd}
+		AND A.SUBJECT_CD=#{subject_cd}
+		AND A.SUBJECT_DIV_CD=#{subject_div_cd}
+   	<choose>
+	<when test='item.equals("name")'>
+       AND S.STUDENT_NAME LIKE '%' || #{searchValue} || '%'
+	</when>
+	<when test='item.equals("code")'>
+       AND S.STUDENT_NO LIKE '%' || #{searchValue} || '%'
+	</when>
+   	</choose>
+    </if>
+</select>
+
+<select id="getAttendeeListStatus" parameterType="map" resultType="hashmap">
+SELECT
+  count(case when STUDENT_STS_CD = 'G012C001' then 1 else null end) as count_normal,
+  count(case when STUDENT_STS_CD = 'G012C002' then 1 else null end) as count_off,
+  count(case when STUDENT_STS_CD = 'G012C005' then 1 else null end) as count_quit
+FROM  
+  (SELECT DISTINCT B.STUDENT_NO, B.STUDENT_STS_CD
+  FROM V_CHUL_VW_STUDENT b
+  JOIN V_CHUL_VW_ATTENDEE a
+    ON b.STUDENT_NO = a.STUDENT_NO    
+    AND A.UNIV_CD=#{univ_cd}
+    AND A.YEAR=#{year}
+    AND A.TERM_CD=#{term_cd}
+    AND A.SUBJECT_CD=#{subject_cd}
+    AND A.SUBJECT_DIV_CD=#{subject_div_cd})
+</select>
+
+<select id="getLectureListCount" parameterType="map" resultType="int">
+	SELECT COUNT(*)
+	FROM 
+		V_CHUL_VW_CLASS
+	WHERE UNIV_CD=#{univ_cd}
+		AND YEAR=#{year}
+		AND TERM_CD=#{term_cd}
+    <if test='!searchValue.equals("")'>
+  	<choose>
+  		<when test='item.equals("classname")'>
+           AND CLASS_NAME LIKE '%' || #{searchValue} || '%'
+  		</when>
+  		<when test='item.equals("profname")'>
+           AND PROF_NAME LIKE '%' || #{searchValue} || '%'
+          </when>
+  	</choose>
+    </if>
+</select>
+
+<select id="getLecture" resultType="com.icerti.ezcerti.domain.Lecture">
+	SELECT *
+	FROM 
+		V_CHUL_VW_CLASS
+	WHERE UNIV_CD=#{univ_cd}
+		AND YEAR=#{year}
+		AND TERM_CD=#{term_cd}
+		AND CLASS_CD=#{class_cd}
+</select>
+
+<select id="getAttendMaster" resultType="com.icerti.ezcerti.domain.Attendmaster">
+	SELECT *
+	FROM 
+		V_CHUL_VW_ATTENDMASTER
+	WHERE UNIV_CD=#{univ_cd}
+		AND YEAR=#{year}
+		AND TERM_CD=#{term_cd}
+		AND SUBJECT_CD=#{subject_cd}
+		AND SUBJECT_DIV_CD=#{subject_div_cd}
+</select>
+	
+</mapper>

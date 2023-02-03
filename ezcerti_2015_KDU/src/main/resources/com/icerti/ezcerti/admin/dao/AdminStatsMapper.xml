@@ -1,0 +1,1716 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.icerti.ezcerti.admin.dao.AdminStatsMapper">
+
+<select id="getAdminStatsAttendStatus" resultType="map">
+<![CDATA[		
+SELECT *
+FROM (SELECT ROWNUM as row_no, p.*
+	FROM
+		(SELECT p.prof_name, p.dept_name, p.hp_no, p.email_addr, c.*
+		FROM
+		  (SELECT a.prof_no,
+		  				a.term_cd, 
+		  			  cnt, 
+		  			  allcnt, 
+		  			  TRUNC(100-((cnt/allcnt)*100),1) AS per_usage,
+		  			  allcnt-cnt AS proccnt
+		  FROM
+		    (SELECT a.prof_no, a.term_cd, COUNT(a.prof_no) AS allcnt
+		    FROM 
+		    	V_CHUL_VW_attendmaster a
+		    WHERE univ_cd=#{univ_cd}
+			    AND year=#{year}
+			    AND term_cd=#{term_cd}
+			    AND class_sts_cd='G020C003'
+			    AND class_type_cd <> 'G019C002'
+			    AND attendee_cnt!=0
+		    group by a.prof_no, a.term_cd) a,
+		    (SELECT b.prof_no, b.term_cd, COUNT(b.prof_no) AS cnt
+		    FROM 
+		    	V_CHUL_VW_attendmaster b
+		    WHERE univ_cd=#{univ_cd}
+			    AND year=#{year}
+			    AND term_cd=#{term_cd}      
+			    AND class_sts_cd='G020C003'
+			    AND class_type_cd <> 'G019C002'  
+			    AND attend_present_cnt=0
+			    AND attendee_cnt!=0
+		    GROUP BY b.prof_no, b.term_cd) b
+		  WHERE a.prof_no=b.prof_no) c, 
+		  	V_CHUL_VW_prof p
+		WHERE c.prof_no=p.prof_no
+		ORDER BY per_usage ASC, allcnt DESC, prof_name ASC) p
+	WHERE ROWNUM <= #{endRow})
+WHERE row_no >= #{startRow}	
+]]>	
+</select>
+
+<select id="getAdminStatsAttendStatusCount" resultType="int">
+<![CDATA[
+SELECT COUNT(*)
+FROM
+  (SELECT a.prof_no,
+  				a.term_cd, 
+  			  cnt, 
+  			  allcnt, 
+  			  TRUNC(100-((cnt/allcnt)*100),1) AS per_usage,
+  			  allcnt-cnt AS proccnt
+  FROM
+    (SELECT a.prof_no, a.term_cd, COUNT(a.prof_no) AS allcnt
+    FROM 
+    	V_CHUL_VW_attendmaster a    
+    WHERE univ_cd=#{univ_cd}
+	    AND year=#{year}
+	    AND term_cd=#{term_cd}
+	    AND class_sts_cd='G020C003'
+	    AND class_type_cd <> 'G019C002'
+	    AND attendee_cnt!=0
+    group by a.prof_no, a.term_cd) a,
+    (SELECT b.prof_no, COUNT(b.prof_no) AS cnt
+    FROM 
+    	V_CHUL_VW_attendmaster b    
+    WHERE univ_cd=#{univ_cd}
+	    AND year=#{year}
+	    AND term_cd=#{term_cd}  
+	    AND class_sts_cd='G020C003'
+	    AND class_type_cd <> 'G019C002'  
+	    AND attend_present_cnt=0
+	    AND attendee_cnt!=0
+    GROUP BY b.prof_no) b
+  WHERE a.prof_no=b.prof_no) c, 
+  	V_CHUL_VW_prof p  
+WHERE c.prof_no=p.prof_no
+]]>
+</select>	
+
+<select id="getAdminStatsAttendStatusExcel" resultType="map">
+<![CDATA[
+SELECT p.prof_name, p.dept_name, p.hp_no, p.email_addr, c.*
+FROM
+  (SELECT a.prof_no,
+  				a.term_cd, 
+  			  cnt, 
+  			  allcnt, 
+  			  TRUNC(100-((cnt/allcnt)*100),1) AS per_usage,
+  			  allcnt-cnt AS proccnt
+  FROM
+    (SELECT a.prof_no, a.term_cd, COUNT(a.prof_no) AS allcnt
+    FROM 
+    	V_CHUL_VW_attendmaster a        
+    WHERE univ_cd=#{univ_cd}
+	    AND year=#{year}
+	    AND term_cd=#{term_cd}
+	    AND class_sts_cd='G020C003'
+	    AND class_type_cd <> 'G019C002'
+	    AND attendee_cnt!=0
+    group by a.prof_no, a.term_cd) a,
+    (SELECT b.prof_no, COUNT(b.prof_no) AS cnt
+    FROM 
+    	V_CHUL_VW_attendmaster b        
+    WHERE univ_cd=#{univ_cd}
+	    AND year=#{year}
+	    AND term_cd=#{term_cd}      
+	    AND class_sts_cd='G020C003'
+	    AND class_type_cd <> 'G019C002'  
+	    AND attend_present_cnt=0
+	    AND attendee_cnt!=0
+    GROUP BY b.prof_no) b
+  WHERE a.prof_no=b.prof_no) c, 
+  	V_CHUL_VW_prof p  
+WHERE c.prof_no=p.prof_no
+ORDER BY per_usage ASC, allcnt DESC
+]]>
+</select>
+
+<select id="getAdminStatsTerm" resultType="map">
+<![CDATA[
+SELECT total_class, 
+			 remain_class, 
+			 off_class, 
+			 add_class, 
+			 a.*, 
+			 100-(per_present+per_late+per_absent+per_etc) AS per_before
+FROM
+	(SELECT SUM(attendee_cnt) AS attendee, 
+	        TRUNC((SUM(attend_present_cnt) / SUM(attendee_cnt)) * 100,2) AS per_present, 
+	        TRUNC((SUM(attend_late_cnt) / SUM(attendee_cnt)) * 100, 2) AS per_late, 
+	        TRUNC((SUM(attend_absent_cnt) / SUM(attendee_cnt)) * 100, 2) AS per_absent,
+	        TRUNC(((SUM(attend_quit_cnt)+SUM(attend_off_cnt))/ SUM(attendee_cnt)) * 100, 2) AS per_etc
+	FROM 
+		V_CHUL_VW_attendmaster
+	WHERE univ_cd=#{univ_cd}
+		AND year=#{year}
+		AND term_cd=#{term_cd}
+		AND class_sts_cd='G020C003'
+		AND class_type_cd <> 'G019C002') a,
+	(SELECT COUNT(*) AS total_class
+	FROM 
+		V_CHUL_VW_attendmaster
+	WHERE univ_cd=#{univ_cd}
+		AND year=#{year}
+		AND term_cd=#{term_cd}) b,
+	(SELECT COUNT(*) AS remain_class
+	FROM 
+		V_CHUL_VW_attendmaster
+	WHERE univ_cd=#{univ_cd}
+		AND year=#{year}
+		AND term_cd=#{term_cd}
+		AND trunc(classday)>=trunc(sysdate)
+		AND class_sts_cd='G020C001'),
+	(SELECT COUNT(*) AS off_class
+	FROM 
+		V_CHUL_VW_attendmaster
+	WHERE univ_cd=#{univ_cd}
+		AND year=#{year}
+		AND term_cd=#{term_cd}	
+		AND class_type_cd='G019C002'),
+	(SELECT COUNT(*) AS add_class
+	FROM 
+		V_CHUL_VW_attendmaster
+	WHERE univ_cd=#{univ_cd}
+		AND year=#{year}
+		AND term_cd=#{term_cd}	
+		AND class_type_cd='G019C003')
+]]>	
+</select>
+
+<select id="getAdminStatsStudentStatusCount" resultType="int">
+<![CDATA[
+SELECT COUNT(distinct student_no)
+FROM CHUL_TB_attenddethist
+WHERE univ_cd=#{univ_cd}
+	AND year=#{year}
+	AND term_cd=#{term_cd}
+	AND trunc(classday) <= trunc(sysdate)
+	AND attend_sts_cd<>'G023C005'
+	AND attend_sts_cd<>'G023C007'
+]]>      
+</select>
+
+<resultMap type="com.icerti.ezcerti.domain.Student" id="studentMap">
+	<result property="student_no" column="student_no"/>
+	<result property="row_no" column="row_no"/>
+</resultMap>
+
+<select id="getAdminStatsStudentStatus" resultType="map">
+	SELECT row_no, s.student_name, s.student_no, S.HP_NO, S.COLL_NAME, S.DEPT_NAME, attend_all, attend_before, attend_present, attend_late, attend_absent
+	FROM (
+	  SELECT student_no, term_cd, attend_all, attend_before, attend_present, attend_late, attend_absent, row_no
+	    FROM (
+	      SELECT TAR.student_no, TAR.term_cd, row_no, rk,
+	            COUNT(attend_sts_cd) AS attend_all,
+	            COUNT(DECODE(attend_sts_cd,'G023C001', '1')) AS attend_before,
+	            COUNT(DECODE(attend_sts_cd,'G023C002', '1')) AS attend_present,
+	            COUNT(DECODE(attend_sts_cd,'G023C003', '1')) AS attend_late,
+	            COUNT(DECODE(attend_sts_cd,'G023C004', '1')) AS attend_absent
+	      FROM CHUL_TB_attenddethist TA 
+	      RIGHT OUTER JOIN (
+	          SELECT student_no, term_cd, rk , row_no
+	          FROM (
+	              SELECT 
+	                ROWNUM AS row_no
+	                ,STUDENT_NO
+	                ,term_cd  
+	                ,rk
+	              FROM (
+	                SELECT student_no, term_cd, RANK() OVER(ORDER BY COUNT(*) DESC) AS RK 
+	                FROM CHUL_TB_ATTENDDETHIST
+	                WHERE ATTEND_STS_CD = 'G023C004' 
+	                	AND univ_cd=#{univ_cd}
+	                	AND year=#{year}
+	                  	AND term_cd=#{term_cd}
+	                  	AND trunc(classday) <![CDATA[<]]> trunc(sysdate) 
+	                GROUP BY STUDENT_NO, term_cd 
+	            ) 
+	            WHERE ROWNUM <![CDATA[<=]]> #{endRow}
+	          )  
+	          WHERE row_no <![CDATA[>=]]> #{startRow}
+	      ) TAR ON TA.STUDENT_NO = TAR.STUDENT_NO AND TA.TERM_CD=TAR.TERM_CD
+	      WHERE univ_cd=#{univ_cd}
+	      AND tar.term_cd=#{term_cd}
+	      AND trunc(classday) <![CDATA[<]]> trunc(sysdate)
+	      AND attend_sts_cd <![CDATA[<>]]> 'G023C005'
+	      AND attend_sts_cd <![CDATA[<>]]> 'G023C007' 
+	      GROUP BY TAR.student_no, tar.term_cd, row_no, rk
+	      ORDER BY attend_absent DESC
+	    ) 
+	) a 
+		LEFT OUTER JOIN V_CHUL_VW_student s 
+	ON a.student_no=s.student_no
+	ORDER BY row_no
+</select>
+
+<select id="getAdminStatsStudentStatusExcel" resultType='map'>
+<![CDATA[
+SELECT s.student_name, s.student_no, S.EMAIL_ADDR, S.HP_NO, S.COLL_NAME, S.DEPT_NAME, attend_all, attend_before, attend_present, attend_late, attend_absent
+FROM  
+    (SELECT student_no, term_cd,
+            COUNT(attend_sts_cd) AS attend_all,
+            COUNT(DECODE(attend_sts_cd,'G023C001', '1')) AS attend_before,
+            COUNT(DECODE(attend_sts_cd,'G023C002', '1')) AS attend_present,
+            COUNT(DECODE(attend_sts_cd,'G023C003', '1')) AS attend_late,
+            COUNT(DECODE(attend_sts_cd,'G023C004', '1')) AS attend_absent
+      FROM CHUL_TB_attenddethist
+      WHERE univ_cd=#{univ_cd}
+	      AND year=#{year}
+	      AND term_cd=#{term_cd}
+	      AND trunc(classday) <= trunc(sysdate)
+	      AND attend_sts_cd<>'G023C005'
+	      AND attend_sts_cd<>'G023C007'
+      GROUP BY student_no, term_cd) a, 
+      	V_CHUL_VW_student s
+WHERE a.student_no=s.student_no
+ORDER BY attend_absent DESC
+]]> 
+</select>
+
+<select id="getAdminStatsProf" resultType="map">
+<![CDATA[
+SELECT *
+FROM
+  (SELECT ROWNUM as row_no, a.*
+  FROM
+    (SELECT DECODE(p.prof_adm_cd, 'G026C001', '정상', 'G026C002', '학기마감') AS prof_adm_name,
+    				a.prof_no, 
+    				a.prof_name, 
+    				a.prof_coll_name, 
+    				a.prof_dept_name, 
+    				all_class, 
+    			  off_class, 
+    			  add_class, 
+    			  attend_present, 
+    			  attend_late, 
+    			  attend_absent, 
+    			  attend_off, 
+    			  attend_quit, 
+    			  attend_off+attend_quit AS attend_etc
+    FROM
+      (select prof_no, 
+      			  prof_name, 
+      			  prof_coll_name, 
+      			  prof_dept_name, 
+      			  count(*) as all_class
+      from 
+      	V_CHUL_VW_attendmaster
+      where univ_cd=#{univ_cd}
+	      AND year=#{year}
+	      AND term_cd=#{term_cd}
+      group by prof_no, prof_name, prof_coll_name, prof_dept_name) a,
+      (select prof_no, count(*) AS off_class
+      from 
+      	V_CHUL_VW_attendmaster
+      where univ_cd=#{univ_cd}
+	      AND year=#{year}
+	      AND term_cd=#{term_cd}
+	      AND class_type_cd='G019C002'
+      group by prof_no) b,
+      (select prof_no, count(*)AS add_class
+      from 
+      	V_CHUL_VW_attendmaster
+      where univ_cd=#{univ_cd}
+	      AND year=#{year}
+	      AND term_cd=#{term_cd}
+	      AND class_type_cd='G019C003'
+      group by prof_no) c,
+      (select prof_no,
+              SUM(attendee_cnt) AS attendee_cnt,
+              TRUNC((SUM(attend_present_cnt)/SUM(attendee_cnt)) * 100,1) AS attend_present,
+              TRUNC((SUM(attend_late_cnt)/SUM(attendee_cnt)) * 100,1) AS attend_late,
+              TRUNC((SUM(attend_absent_cnt)/SUM(attendee_cnt)) * 100,1) AS attend_absent,
+              TRUNC((SUM(attend_off_cnt)/SUM(attendee_cnt)) * 100,1) AS attend_off,
+              TRUNC((SUM(attend_quit_cnt)/SUM(attendee_cnt)) * 100,1) AS attend_quit
+      from 
+      	V_CHUL_VW_attendmaster
+      where univ_cd=#{univ_cd}
+	      AND year=#{year}
+	      AND term_cd=#{term_cd}      
+	      AND class_type_cd <> 'G019C002'
+	      AND class_sts_cd='G020C003'
+	      AND attendee_cnt <> 0 
+      group by prof_no) d, 
+      	V_CHUL_VW_prof p
+    WHERE a.prof_no=b.prof_no(+)
+	    AND a.prof_no=c.prof_no(+)
+	    AND a.prof_no=d.prof_no(+)
+	    AND a.prof_no=p.prof_no(+)
+]]>    
+		<if test='!searchValue.equals("")'>
+		<choose>
+			<when test='item.equals("code")'>    
+    		AND a.prof_no LIKE '%' || #{searchValue} || '%'
+    	</when>
+    	<when test='item.equals("name")'>
+    		AND a.prof_name LIKE '%' || #{searchValue} || '%'
+    	</when>
+		</choose>
+		</if>
+<![CDATA[		    	
+    ORDER BY prof_name ASC) a
+  WHERE ROWNUM <= #{endRow})
+WHERE row_no >= #{startRow}
+]]>
+</select>
+
+<select id="getAdminStatsProfCount" resultType="int">
+<![CDATA[
+SELECT COUNT(*)
+FROM
+  (SELECT a.prof_no, a.prof_name, a.prof_coll_name, a.prof_dept_name, all_class, off_class, 
+         add_class, attend_present, attend_late, attend_absent, attend_off, 
+         attend_quit
+  FROM
+    (select prof_no, prof_name, prof_coll_name, prof_dept_name, count(*) as all_class
+    from 
+    	V_CHUL_VW_attendmaster
+    where univ_cd=#{univ_cd}
+	    AND year=#{year}
+	    AND term_cd=#{term_cd}
+    group by prof_no, prof_name, prof_coll_name, prof_dept_name) a,
+    (select prof_no, count(*) AS off_class
+    from 
+    	V_CHUL_VW_attendmaster
+    where univ_cd=#{univ_cd}
+	    AND year=#{year}
+	    AND term_cd=#{term_cd}
+	    AND class_type_cd='G019C002'
+    group by prof_no) b,
+    (select prof_no, count(*)AS add_class
+    from 
+    	V_CHUL_VW_attendmaster
+    where univ_cd=#{univ_cd}
+	    AND year=#{year}
+	    AND term_cd=#{term_cd}
+	    AND class_type_cd='G019C003'
+    group by prof_no) c,
+    (select prof_no,
+            SUM(attendee_cnt) AS attendee_cnt,
+            TRUNC((SUM(attend_present_cnt)/SUM(attendee_cnt)) * 100,2) AS attend_present,
+            TRUNC((SUM(attend_late_cnt)/SUM(attendee_cnt)) * 100,2) AS attend_late,
+            TRUNC((SUM(attend_absent_cnt)/SUM(attendee_cnt)) * 100,2) AS attend_absent,
+            TRUNC((SUM(attend_off_cnt)/SUM(attendee_cnt)) * 100,2) AS attend_off,
+            TRUNC((SUM(attend_quit_cnt)/SUM(attendee_cnt)) * 100,2) AS attend_quit
+    from 
+    	V_CHUL_VW_attendmaster
+    where univ_cd=#{univ_cd}
+	    AND year=#{year}
+	    AND term_cd=#{term_cd}      
+	    AND class_type_cd <> 'G019C002'
+	    and class_sts_cd='G020C003'
+	    AND attendee_cnt <> 0 
+    group by prof_no) d
+  WHERE a.prof_no=b.prof_no(+)
+  AND a.prof_no=c.prof_no(+)
+  AND a.prof_no=d.prof_no(+)
+]]>    
+		<if test='!searchValue.equals("")'>
+		<choose>
+			<when test='item.equals("code")'>    
+    		AND a.prof_no LIKE '%' || #{searchValue} || '%'
+    	</when>
+    	<when test='item.equals("name")'>
+    		AND a.prof_name LIKE '%' || #{searchValue} || '%'
+    	</when>
+		</choose>
+		</if>
+<![CDATA[		
+  ORDER BY prof_name ASC)
+]]>
+</select>
+
+<select id="getAdminStatsProfExcel" resultType="map">
+<![CDATA[
+    SELECT 
+		 DECODE(p.prof_adm_cd, 'G026C001', '정상', 'G026C002', '학기마감') AS prof_adm_name,
+		 a.prof_no, a.prof_name, a.prof_coll_name, a.prof_dept_name, all_class, 
+		 off_class, add_class, attend_present, attend_late, attend_absent, 
+		 attend_off, attend_quit, attend_off+attend_quit AS attend_etc
+    FROM
+      (select prof_no, prof_name, prof_coll_name, prof_dept_name, count(*) as all_class
+	    from 
+	    	V_CHUL_VW_attendmaster
+      where univ_cd=#{univ_cd}
+	      AND year=#{year}
+	      AND term_cd=#{term_cd}
+      group by prof_no, prof_name, prof_coll_name, prof_dept_name) a,
+      (select prof_no, count(*) AS off_class
+	    from 
+	    	V_CHUL_VW_attendmaster
+      where univ_cd=#{univ_cd}
+	      AND year=#{year}
+	      AND term_cd=#{term_cd}
+	      AND class_type_cd='G019C002'
+      group by prof_no) b,
+      (select prof_no, count(*)AS add_class
+	    from 
+	    	V_CHUL_VW_attendmaster
+      where univ_cd=#{univ_cd}
+	      AND year=#{year}
+	      AND term_cd=#{term_cd}
+	      AND class_type_cd='G019C003'
+      group by prof_no) c,
+      (select prof_no,
+              SUM(attendee_cnt) AS attendee_cnt,
+              TRUNC((SUM(attend_present_cnt)/SUM(attendee_cnt)) * 100,1) AS attend_present,
+              TRUNC((SUM(attend_late_cnt)/SUM(attendee_cnt)) * 100,1) AS attend_late,
+              TRUNC((SUM(attend_absent_cnt)/SUM(attendee_cnt)) * 100,1) AS attend_absent,
+              TRUNC((SUM(attend_off_cnt)/SUM(attendee_cnt)) * 100,1) AS attend_off,
+              TRUNC((SUM(attend_quit_cnt)/SUM(attendee_cnt)) * 100,1) AS attend_quit
+	    from 
+	    	V_CHUL_VW_attendmaster
+      where univ_cd=#{univ_cd}
+	      AND year=#{year}
+	      AND term_cd=#{term_cd}      
+	      AND class_type_cd <> 'G019C002'
+	      AND class_sts_cd='G020C003'
+	      AND attendee_cnt <> 0 
+      group by prof_no) d, 
+      	V_CHUL_VW_prof p
+    WHERE a.prof_no=b.prof_no(+)
+	    AND a.prof_no=c.prof_no(+)
+	    AND a.prof_no=d.prof_no(+)
+	    AND a.prof_no=p.prof_no(+)
+]]>    
+		<if test='!searchValue.equals("")'>
+		<choose>
+			<when test='item.equals("code")'>    
+    		AND a.prof_no LIKE '%' || #{searchValue} || '%'
+    	</when>
+    	<when test='item.equals("name")'>
+    		AND a.prof_name LIKE '%' || #{searchValue} || '%'
+    	</when>
+		</choose>
+		</if>
+<![CDATA[		    	
+    ORDER BY prof_name ASC
+]]>
+</select>
+
+<select id="getAdminAcademicStatsCount" resultType="int">
+SELECT
+	COUNT(*)
+FROM 
+(
+SELECT 
+  INFO.UNIV_CD, INFO.TERM_CD,
+  INFO.SUBJECT_CD, INFO.SUBJECT_DIV_CD,
+  INFO.PROF_NO, INFO.PROF_NAME, INFO.PROF_DEPT_NAME AS PROF_DEPT_NM, COUNT(*) AS CLASS_CNT
+FROM V_CHUL_VW_ATTENDMASTER INFO
+-- , CHUL_TB_UNIV UNIV
+WHERE INFO.UNIV_CD = #{univ_cd}
+AND INFO.YEAR = #{year}
+AND INFO.TERM_CD = #{term_cd}
+	<if test='!searchValue.equals("")'>
+		<choose>
+			<when test='item.equals("code")'>
+				AND INFO.PROF_NO LIKE #{searchValue} || '%'
+			</when>
+			<when test='item.equals("name")'>
+				AND INFO.PROF_NAME LIKE #{searchValue} || '%'
+			</when>
+		</choose>
+	</if>        
+GROUP BY INFO.UNIV_CD, INFO.TERM_CD, INFO.SUBJECT_CD, INFO.SUBJECT_DIV_CD, INFO.PROF_NO, INFO.PROF_NAME, INFO.PROF_DEPT_NAME
+) A
+</select>
+
+<select id="getAdminAcademicStats" resultType="map">
+SELECT
+*
+FROM
+(
+  SELECT
+    ROWNUM AS ROW_NO
+    , A.*
+  FROM 
+  (
+  	SELECT * FROM (
+		SELECT 
+			A.*, PRO.HP_NO
+		FROM (
+			    SELECT 
+				  INFO.UNIV_CD, INFO.TERM_CD, 
+				  INFO.SUBJECT_CD, INFO.SUBJECT_DIV_CD, INFO.CLASS_NAME,
+				  INFO.PROF_NO, INFO.PROF_NAME, INFO.PROF_DEPT_NAME AS PROF_DEPT_NM, COUNT(*) AS CLASS_CNT
+			    FROM V_CHUL_VW_ATTENDMASTER INFO
+			    -- , CHUL_TB_UNIV UNIV
+				WHERE INFO.UNIV_CD = #{univ_cd}
+				AND INFO.YEAR = #{year}
+				AND INFO.TERM_CD = #{term_cd}
+					<if test='!searchValue.equals("")'>
+						<choose>
+							<when test='item.equals("code")'>
+								AND INFO.PROF_NO LIKE #{searchValue} || '%'
+							</when>
+							<when test='item.equals("name")'>
+								AND INFO.PROF_NAME LIKE #{searchValue} || '%'
+							</when>
+						</choose>
+					</if>        
+			    GROUP BY INFO.UNIV_CD, INFO.TERM_CD, INFO.SUBJECT_CD, INFO.SUBJECT_DIV_CD, INFO.CLASS_NAME, 
+			    		 INFO.PROF_NO, INFO.PROF_NAME, INFO.PROF_DEPT_NAME
+			) A
+			INNER JOIN V_CHUL_VW_PROF PRO
+	      	ON A.PROF_NO = PRO.PROF_NO
+      ) A	
+	WHERE 1=1 			
+	<choose>
+		<when test='sortField != null and !sortField.equals("")'>
+			ORDER BY ${sortField} ${sortOrder}
+		</when>
+		<otherwise>
+			ORDER BY PROF_NO, CLASS_NAME
+		</otherwise>
+	</choose>
+  ) A
+<![CDATA[		    	
+  WHERE ROWNUM <= #{endRow}
+)   
+WHERE row_no >= #{startRow}
+]]>
+</select> 
+
+<select id="getLectureDetail" resultType="map">
+SELECT
+	PROF.DEPT_NAME AS PROF_DEPT_NAME,A.PROF_NO, A.PROF_NAME, A.SUBJECT_CD, A.SUBJECT_DIV_CD, A.CLASS_NAME,
+    NVL(A.CLASS_CNT, 0) AS CLASS_CNT, NVL(C.ADD_CNT, 0) AS ADD_CNT, NVL(B.OFF_CNT, 0) AS OFF_CNT
+FROM
+(
+	SELECT 
+		PROF_NO, PROF_NAME, SUBJECT_CD, SUBJECt_DIV_CD, CLASS_NAME, 
+        COUNT(*) AS CLASS_CNT
+	FROM V_CHUL_VW_ATTENDMASTER 
+	WHERE UNIV_CD = #{univ_cd}
+		AND YEAR = #{year}
+		AND TERM_CD = #{term_cd}
+		AND SUBJECT_CD = #{subject_cd}
+		AND SUBJECT_DIV_CD = #{subject_div_cd}
+		AND PROF_NO = #{prof_no}
+	GROUP BY PROF_NO, PROF_NAME, SUBJECT_CD, SUBJECt_DIV_CD, CLASS_NAME
+) A
+	LEFT OUTER JOIN
+(
+	SELECT 
+		PROF_NO, COUNT(*) AS OFF_CNT
+	FROM V_CHUL_VW_ATTENDMASTER
+	WHERE UNIV_CD = #{univ_cd}
+		AND YEAR = #{year}
+		AND TERM_CD = #{term_cd}
+		AND SUBJECT_CD = #{subject_cd}
+		AND SUBJECT_DIV_CD = #{subject_div_cd}
+		AND PROF_NO = #{prof_no}
+		AND CLASS_TYPE_CD='G019C002'
+	GROUP BY PROF_NO
+) B ON B.PROF_NO = A.PROF_NO
+	LEFT OUTER JOIN
+(
+	SELECT 
+		PROF_NO, COUNT(*)AS ADD_CNT
+	FROM V_CHUL_VW_ATTENDMASTER
+	WHERE UNIV_CD = #{univ_cd}
+		AND YEAR = #{year}
+		AND TERM_CD = #{term_cd}
+		AND SUBJECT_CD = #{subject_cd}
+		AND SUBJECT_DIV_CD = #{subject_div_cd}
+		AND PROF_NO = #{prof_no}
+		AND CLASS_TYPE_CD='G019C003'
+	GROUP BY PROF_NO
+) C ON C.PROF_NO = A.PROF_NO
+	LEFT OUTER JOIN V_CHUL_VW_PROF PROF ON PROF.PROF_NO = A.PROF_NO
+</select>
+
+<select id="getLectureCount" parameterType="map" resultType="int">
+SELECT 
+	COUNT(*) AS CLASS_COUNT
+FROM CHUL_TB_ATTENDMASTER_ADDINFO
+WHERE UNIV_CD = #{univ_cd}
+	AND YEAR = #{year}
+	AND TERM_CD = #{term_cd}
+	AND SUBJECT_CD = #{subject_cd}
+	AND SUBJECT_DIV_CD = #{subject_div_cd} 
+	AND PROF_NO = #{prof_no}
+</select>
+
+<select id="getAdminAcademicProfClassStats" resultType="map">
+SELECT
+	(ROWNUM - 1) AS RNUM,
+    PROF_STAT.*
+FROM
+(
+  SELECT
+  	  '학생명' AS STUDENT_NAME, '학과' AS DEPT_NAME,
+  	  '취업' AS JOB_PASS,
+      0 AS ATTEND_PRESENT_CNT,
+      0 AS ATTEND_GONGGYUL_CNT,
+      0 AS ATTEND_LATE_CNT,
+      0 AS ATTEND_ABSENT_CNT,
+      '학적상태'   AS STUDENT_STS_CD,
+      '학적변경날짜'   AS STATUS_CHANGE_DATE,
+      '학번' AS STUDENT_NO,
+      MAX(CASE R-R1 WHEN 0 THEN B.CDAY ELSE '0' END) D1,
+      MAX(CASE R-R1 WHEN 1 THEN B.CDAY ELSE '0' END) D2,
+      MAX(CASE R-R1 WHEN 2 THEN B.CDAY ELSE '0' END) D3,
+      MAX(CASE R-R1 WHEN 3 THEN B.CDAY ELSE '0' END) D4,
+      MAX(CASE R-R1 WHEN 4 THEN B.CDAY ELSE '0' END) D5,
+      MAX(CASE R-R1 WHEN 5 THEN B.CDAY ELSE '0' END) D6,
+      MAX(CASE R-R1 WHEN 6 THEN B.CDAY ELSE '0' END) D7,
+      MAX(CASE R-R1 WHEN 7 THEN B.CDAY ELSE '0' END) D8,
+      MAX(CASE R-R1 WHEN 8 THEN B.CDAY ELSE '0' END) D9,
+      MAX(CASE R-R1 WHEN 9 THEN B.CDAY ELSE '0' END) D10,
+      MAX(CASE R-R1 WHEN 10 THEN B.CDAY ELSE '0' END) D11,
+      MAX(CASE R-R1 WHEN 11 THEN B.CDAY ELSE '0' END) D12,
+      MAX(CASE R-R1 WHEN 12 THEN B.CDAY ELSE '0' END) D13,
+      MAX(CASE R-R1 WHEN 13 THEN B.CDAY ELSE '0' END) D14,
+      MAX(CASE R-R1 WHEN 14 THEN B.CDAY ELSE '0' END) D15,
+      MAX(CASE R-R1 WHEN 15 THEN B.CDAY ELSE '0' END) D16,
+      MAX(CASE R-R1 WHEN 16 THEN B.CDAY ELSE '0' END) D17,
+      MAX(CASE R-R1 WHEN 17 THEN B.CDAY ELSE '0' END) D18,
+      MAX(CASE R-R1 WHEN 18 THEN B.CDAY ELSE '0' END) D19,
+      MAX(CASE R-R1 WHEN 19 THEN B.CDAY ELSE '0' END) D20,
+      MAX(CASE R-R1 WHEN 20 THEN B.CDAY ELSE '0' END) D21,
+      MAX(CASE R-R1 WHEN 21 THEN B.CDAY ELSE '0' END) D22,
+      MAX(CASE R-R1 WHEN 22 THEN B.CDAY ELSE '0' END) D23,
+      MAX(CASE R-R1 WHEN 23 THEN B.CDAY ELSE '0' END) D24,
+      MAX(CASE R-R1 WHEN 24 THEN B.CDAY ELSE '0' END) D25,
+      MAX(CASE R-R1 WHEN 25 THEN B.CDAY ELSE '0' END) D26,
+      MAX(CASE R-R1 WHEN 26 THEN B.CDAY ELSE '0' END) D27,
+      MAX(CASE R-R1 WHEN 27 THEN B.CDAY ELSE '0' END) D28,
+      MAX(CASE R-R1 WHEN 28 THEN B.CDAY ELSE '0' END) D29,
+      MAX(CASE R-R1 WHEN 29 THEN B.CDAY ELSE '0' END) D30,
+      MAX(CASE R-R1 WHEN 30 THEN B.CDAY ELSE '0' END) D31,
+      MAX(CASE R-R1 WHEN 31 THEN B.CDAY ELSE '0' END) D32,
+      MAX(CASE R-R1 WHEN 32 THEN B.CDAY ELSE '0' END) D33,
+      MAX(CASE R-R1 WHEN 33 THEN B.CDAY ELSE '0' END) D34,
+      MAX(CASE R-R1 WHEN 34 THEN B.CDAY ELSE '0' END) D35,
+      MAX(CASE R-R1 WHEN 35 THEN B.CDAY ELSE '0' END) D36,
+      MAX(CASE R-R1 WHEN 36 THEN B.CDAY ELSE '0' END) D37,
+      MAX(CASE R-R1 WHEN 37 THEN B.CDAY ELSE '0' END) D38,
+      MAX(CASE R-R1 WHEN 38 THEN B.CDAY ELSE '0' END) D39,
+      MAX(CASE R-R1 WHEN 39 THEN B.CDAY ELSE '0' END) D40,
+      MAX(CASE R-R1 WHEN 40 THEN B.CDAY ELSE '0' END) D41,
+      MAX(CASE R-R1 WHEN 41 THEN B.CDAY ELSE '0' END) D42,
+      MAX(CASE R-R1 WHEN 42 THEN B.CDAY ELSE '0' END) D43,
+      MAX(CASE R-R1 WHEN 43 THEN B.CDAY ELSE '0' END) D44,
+      MAX(CASE R-R1 WHEN 44 THEN B.CDAY ELSE '0' END) D45,
+      MAX(CASE R-R1 WHEN 45 THEN B.CDAY ELSE '0' END) D46,
+      MAX(CASE R-R1 WHEN 46 THEN B.CDAY ELSE '0' END) D47,
+      MAX(CASE R-R1 WHEN 47 THEN B.CDAY ELSE '0' END) D48,
+      MAX(CASE R-R1 WHEN 48 THEN B.CDAY ELSE '0' END) D49,
+      MAX(CASE R-R1 WHEN 49 THEN B.CDAY ELSE '0' END) D50,
+      MAX(CASE R-R1 WHEN 50 THEN B.CDAY ELSE '0' END) D51,
+      MAX(CASE R-R1 WHEN 51 THEN B.CDAY ELSE '0' END) D52,
+      MAX(CASE R-R1 WHEN 52 THEN B.CDAY ELSE '0' END) D53,
+      MAX(CASE R-R1 WHEN 53 THEN B.CDAY ELSE '0' END) D54,
+      MAX(CASE R-R1 WHEN 54 THEN B.CDAY ELSE '0' END) D55,
+      MAX(CASE R-R1 WHEN 55 THEN B.CDAY ELSE '0' END) D56,
+      MAX(CASE R-R1 WHEN 56 THEN B.CDAY ELSE '0' END) D57,
+      MAX(CASE R-R1 WHEN 57 THEN B.CDAY ELSE '0' END) D58,
+      MAX(CASE R-R1 WHEN 58 THEN B.CDAY ELSE '0' END) D59,
+	  MAX(CASE R-R1 WHEN 59 THEN B.CDAY ELSE '0' END) D60,
+	  MAX(CASE R-R1 WHEN 60 THEN B.CDAY ELSE '0' END) D61,
+	  MAX(CASE R-R1 WHEN 61 THEN B.CDAY ELSE '0' END) D62,
+	  MAX(CASE R-R1 WHEN 62 THEN B.CDAY ELSE '0' END) D63,
+	  MAX(CASE R-R1 WHEN 63 THEN B.CDAY ELSE '0' END) D64,
+	  MAX(CASE R-R1 WHEN 64 THEN B.CDAY ELSE '0' END) D65,
+	  MAX(CASE R-R1 WHEN 65 THEN B.CDAY ELSE '0' END) D66,
+	  MAX(CASE R-R1 WHEN 66 THEN B.CDAY ELSE '0' END) D67,
+	  MAX(CASE R-R1 WHEN 67 THEN B.CDAY ELSE '0' END) D68,
+	  MAX(CASE R-R1 WHEN 68 THEN B.CDAY ELSE '0' END) D69,
+	  MAX(CASE R-R1 WHEN 69 THEN B.CDAY ELSE '0' END) D70,      
+	  MAX(CASE R-R1 WHEN 70 THEN B.CDAY ELSE '0' END) D71,      
+	  MAX(CASE R-R1 WHEN 71 THEN B.CDAY ELSE '0' END) D72,      
+	  MAX(CASE R-R1 WHEN 72 THEN B.CDAY ELSE '0' END) D73,      
+	  MAX(CASE R-R1 WHEN 73 THEN B.CDAY ELSE '0' END) D74,      
+	  MAX(CASE R-R1 WHEN 74 THEN B.CDAY ELSE '0' END) D75,      
+	  MAX(CASE R-R1 WHEN 75 THEN B.CDAY ELSE '0' END) D76,      
+	  MAX(CASE R-R1 WHEN 76 THEN B.CDAY ELSE '0' END) D77,      
+	  MAX(CASE R-R1 WHEN 77 THEN B.CDAY ELSE '0' END) D78,      
+	  MAX(CASE R-R1 WHEN 78 THEN B.CDAY ELSE '0' END) D79,      
+	  MAX(CASE R-R1 WHEN 79 THEN B.CDAY ELSE '0' END) D80,      
+	  MAX(CASE R-R1 WHEN 80 THEN B.CDAY ELSE '0' END) D81,      
+	  MAX(CASE R-R1 WHEN 81 THEN B.CDAY ELSE '0' END) D82,      
+	  MAX(CASE R-R1 WHEN 82 THEN B.CDAY ELSE '0' END) D83,      
+	  MAX(CASE R-R1 WHEN 83 THEN B.CDAY ELSE '0' END) D84,      
+	  MAX(CASE R-R1 WHEN 84 THEN B.CDAY ELSE '0' END) D85,      
+	  MAX(CASE R-R1 WHEN 85 THEN B.CDAY ELSE '0' END) D86,      
+	  MAX(CASE R-R1 WHEN 86 THEN B.CDAY ELSE '0' END) D87,      
+	  MAX(CASE R-R1 WHEN 87 THEN B.CDAY ELSE '0' END) D88,      
+	  MAX(CASE R-R1 WHEN 88 THEN B.CDAY ELSE '0' END) D89,      
+	  MAX(CASE R-R1 WHEN 89 THEN B.CDAY ELSE '0' END) D90,      
+	  MAX(CASE R-R1 WHEN 90 THEN B.CDAY ELSE '0' END) D91,      
+	  MAX(CASE R-R1 WHEN 91 THEN B.CDAY ELSE '0' END) D92,      
+	  MAX(CASE R-R1 WHEN 92 THEN B.CDAY ELSE '0' END) D93,      
+	  MAX(CASE R-R1 WHEN 93 THEN B.CDAY ELSE '0' END) D94,      
+	  MAX(CASE R-R1 WHEN 94 THEN B.CDAY ELSE '0' END) D95,      
+	  MAX(CASE R-R1 WHEN 95 THEN B.CDAY ELSE '0' END) D96,      
+	  MAX(CASE R-R1 WHEN 96 THEN B.CDAY ELSE '0' END) D97,      
+	  MAX(CASE R-R1 WHEN 97 THEN B.CDAY ELSE '0' END) D98,      
+	  MAX(CASE R-R1 WHEN 98 THEN B.CDAY ELSE '0' END) D99,      
+	  MAX(CASE R-R1 WHEN 99 THEN B.CDAY ELSE '0' END) D100      
+  FROM
+  (
+    SELECT
+        ROW_NUMBER() OVER(ORDER BY PROF_NO, CLASSDAY, CLASSHOUR_START_TIME) AS R, PROF_NO, 
+        CASE WHEN CLASS_TYPE_CD = 'G019C003' THEN TO_CHAR(CLASSDAY, 'MM-DD') || '-(' || TO_CHAR(BEFORE_CLASSDAY, 'MM-DD') || ')'
+        	ELSE TO_CHAR(CLASSDAY, 'MM-DD')
+        END CDAY
+    FROM CHUL_TB_ATTENDMASTER_ADDINFO
+    WHERE UNIV_CD = #{univ_cd}
+    	AND YEAR = #{year}
+		AND TERM_CD = #{term_cd}
+		AND SUBJECT_CD = #{subject_cd}
+		AND SUBJECT_DIV_CD = #{subject_div_cd}
+		AND PROF_NO = #{prof_no}
+		AND CLASS_TYPE_CD != 'G019C002'
+  ) B
+  JOIN
+  (
+    SELECT MIN(R11) AS R1, PROF_NO
+    FROM
+        (
+        SELECT
+            ROW_NUMBER() OVER(ORDER BY PROF_NO, CLASSDAY, CLASSHOUR_START_TIME) AS R11, PROF_NO
+        FROM CHUL_TB_ATTENDMASTER_ADDINFO
+	    WHERE UNIV_CD = #{univ_cd}
+	    	AND YEAR = #{year}
+			AND TERM_CD = #{term_cd}
+			AND SUBJECT_CD = #{subject_cd}
+			AND SUBJECT_DIV_CD = #{subject_div_cd}
+			AND PROF_NO = #{prof_no}
+			AND CLASS_TYPE_CD != 'G019C002'
+        )
+    GROUP BY PROF_NO
+  ) A
+  ON B.PROF_NO = A.PROF_NO
+  GROUP BY B.PROF_NO
+  UNION ALL
+  SELECT * FROM (
+    SELECT
+    	STD.STUDENT_NAME, STD.DEPT_NAME,
+    	ATTEND_CNT.JOB_PASS,
+        ATTEND_CNT.ATTEND_PRESENT_CNT,
+        ATTEND_CNT.ATTEND_GONGGYUL_CNT,
+        ATTEND_CNT.ATTEND_LATE_CNT,
+        ATTEND_CNT.ATTEND_ABSENT_CNT,
+        STD.STUDENT_STS_CD,
+      	STD.STATUS_CHANGE_DATE,
+		STD_STAT.*
+    FROM
+    (
+      SELECT
+          B.STUDENT_NO,
+          MAX(CASE R-R1 WHEN 0 THEN B.ATTEND_STS_CD ELSE '0' END) D1,
+          MAX(CASE R-R1 WHEN 1 THEN B.ATTEND_STS_CD ELSE '0' END) D2,
+          MAX(CASE R-R1 WHEN 2 THEN B.ATTEND_STS_CD ELSE '0' END) D3,
+          MAX(CASE R-R1 WHEN 3 THEN B.ATTEND_STS_CD ELSE '0' END) D4,
+          MAX(CASE R-R1 WHEN 4 THEN B.ATTEND_STS_CD ELSE '0' END) D5,
+          MAX(CASE R-R1 WHEN 5 THEN B.ATTEND_STS_CD ELSE '0' END) D6,
+          MAX(CASE R-R1 WHEN 6 THEN B.ATTEND_STS_CD ELSE '0' END) D7,
+          MAX(CASE R-R1 WHEN 7 THEN B.ATTEND_STS_CD ELSE '0' END) D8,
+          MAX(CASE R-R1 WHEN 8 THEN B.ATTEND_STS_CD ELSE '0' END) D9,
+          MAX(CASE R-R1 WHEN 9 THEN B.ATTEND_STS_CD ELSE '0' END) D10,
+          MAX(CASE R-R1 WHEN 10 THEN B.ATTEND_STS_CD ELSE '0' END) D11,
+          MAX(CASE R-R1 WHEN 11 THEN B.ATTEND_STS_CD ELSE '0' END) D12,
+          MAX(CASE R-R1 WHEN 12 THEN B.ATTEND_STS_CD ELSE '0' END) D13,
+          MAX(CASE R-R1 WHEN 13 THEN B.ATTEND_STS_CD ELSE '0' END) D14,
+          MAX(CASE R-R1 WHEN 14 THEN B.ATTEND_STS_CD ELSE '0' END) D15,
+          MAX(CASE R-R1 WHEN 15 THEN B.ATTEND_STS_CD ELSE '0' END) D16,
+          MAX(CASE R-R1 WHEN 16 THEN B.ATTEND_STS_CD ELSE '0' END) D17,
+          MAX(CASE R-R1 WHEN 17 THEN B.ATTEND_STS_CD ELSE '0' END) D18,
+          MAX(CASE R-R1 WHEN 18 THEN B.ATTEND_STS_CD ELSE '0' END) D19,
+	      MAX(CASE R-R1 WHEN 19 THEN B.ATTEND_STS_CD ELSE '0' END) D20,
+	      MAX(CASE R-R1 WHEN 20 THEN B.ATTEND_STS_CD ELSE '0' END) D21,
+	      MAX(CASE R-R1 WHEN 21 THEN B.ATTEND_STS_CD ELSE '0' END) D22,
+	      MAX(CASE R-R1 WHEN 22 THEN B.ATTEND_STS_CD ELSE '0' END) D23,
+	      MAX(CASE R-R1 WHEN 23 THEN B.ATTEND_STS_CD ELSE '0' END) D24,
+	      MAX(CASE R-R1 WHEN 24 THEN B.ATTEND_STS_CD ELSE '0' END) D25,
+	      MAX(CASE R-R1 WHEN 25 THEN B.ATTEND_STS_CD ELSE '0' END) D26,
+	      MAX(CASE R-R1 WHEN 26 THEN B.ATTEND_STS_CD ELSE '0' END) D27,
+	      MAX(CASE R-R1 WHEN 27 THEN B.ATTEND_STS_CD ELSE '0' END) D28,
+	      MAX(CASE R-R1 WHEN 28 THEN B.ATTEND_STS_CD ELSE '0' END) D29,
+	      MAX(CASE R-R1 WHEN 29 THEN B.ATTEND_STS_CD ELSE '0' END) D30,
+	      MAX(CASE R-R1 WHEN 30 THEN B.ATTEND_STS_CD ELSE '0' END) D31,
+	      MAX(CASE R-R1 WHEN 31 THEN B.ATTEND_STS_CD ELSE '0' END) D32,
+	      MAX(CASE R-R1 WHEN 32 THEN B.ATTEND_STS_CD ELSE '0' END) D33,
+	      MAX(CASE R-R1 WHEN 33 THEN B.ATTEND_STS_CD ELSE '0' END) D34,
+	      MAX(CASE R-R1 WHEN 34 THEN B.ATTEND_STS_CD ELSE '0' END) D35,
+	      MAX(CASE R-R1 WHEN 35 THEN B.ATTEND_STS_CD ELSE '0' END) D36,
+	      MAX(CASE R-R1 WHEN 36 THEN B.ATTEND_STS_CD ELSE '0' END) D37,
+	      MAX(CASE R-R1 WHEN 37 THEN B.ATTEND_STS_CD ELSE '0' END) D38,
+	      MAX(CASE R-R1 WHEN 38 THEN B.ATTEND_STS_CD ELSE '0' END) D39,
+		  MAX(CASE R-R1 WHEN 39 THEN B.ATTEND_STS_CD ELSE '0' END) D40,
+		  MAX(CASE R-R1 WHEN 40 THEN B.ATTEND_STS_CD ELSE '0' END) D41,
+		  MAX(CASE R-R1 WHEN 41 THEN B.ATTEND_STS_CD ELSE '0' END) D42,
+		  MAX(CASE R-R1 WHEN 42 THEN B.ATTEND_STS_CD ELSE '0' END) D43,
+		  MAX(CASE R-R1 WHEN 43 THEN B.ATTEND_STS_CD ELSE '0' END) D44,
+		  MAX(CASE R-R1 WHEN 44 THEN B.ATTEND_STS_CD ELSE '0' END) D45,
+		  MAX(CASE R-R1 WHEN 45 THEN B.ATTEND_STS_CD ELSE '0' END) D46,
+		  MAX(CASE R-R1 WHEN 46 THEN B.ATTEND_STS_CD ELSE '0' END) D47,
+		  MAX(CASE R-R1 WHEN 47 THEN B.ATTEND_STS_CD ELSE '0' END) D48,
+		  MAX(CASE R-R1 WHEN 48 THEN B.ATTEND_STS_CD ELSE '0' END) D49,
+		  MAX(CASE R-R1 WHEN 49 THEN B.ATTEND_STS_CD ELSE '0' END) D50,
+		  MAX(CASE R-R1 WHEN 50 THEN B.ATTEND_STS_CD ELSE '0' END) D51,
+		  MAX(CASE R-R1 WHEN 51 THEN B.ATTEND_STS_CD ELSE '0' END) D52,
+		  MAX(CASE R-R1 WHEN 52 THEN B.ATTEND_STS_CD ELSE '0' END) D53,
+		  MAX(CASE R-R1 WHEN 53 THEN B.ATTEND_STS_CD ELSE '0' END) D54,
+		  MAX(CASE R-R1 WHEN 54 THEN B.ATTEND_STS_CD ELSE '0' END) D55,
+		  MAX(CASE R-R1 WHEN 55 THEN B.ATTEND_STS_CD ELSE '0' END) D56,
+		  MAX(CASE R-R1 WHEN 56 THEN B.ATTEND_STS_CD ELSE '0' END) D57,
+		  MAX(CASE R-R1 WHEN 57 THEN B.ATTEND_STS_CD ELSE '0' END) D58,
+		  MAX(CASE R-R1 WHEN 58 THEN B.ATTEND_STS_CD ELSE '0' END) D59,
+		  MAX(CASE R-R1 WHEN 59 THEN B.ATTEND_STS_CD ELSE '0' END) D60,
+		  MAX(CASE R-R1 WHEN 60 THEN B.ATTEND_STS_CD ELSE '0' END) D61,
+		  MAX(CASE R-R1 WHEN 61 THEN B.ATTEND_STS_CD ELSE '0' END) D62,
+		  MAX(CASE R-R1 WHEN 62 THEN B.ATTEND_STS_CD ELSE '0' END) D63,
+		  MAX(CASE R-R1 WHEN 63 THEN B.ATTEND_STS_CD ELSE '0' END) D64,
+		  MAX(CASE R-R1 WHEN 64 THEN B.ATTEND_STS_CD ELSE '0' END) D65,
+		  MAX(CASE R-R1 WHEN 65 THEN B.ATTEND_STS_CD ELSE '0' END) D66,
+		  MAX(CASE R-R1 WHEN 66 THEN B.ATTEND_STS_CD ELSE '0' END) D67,
+		  MAX(CASE R-R1 WHEN 67 THEN B.ATTEND_STS_CD ELSE '0' END) D68,
+		  MAX(CASE R-R1 WHEN 68 THEN B.ATTEND_STS_CD ELSE '0' END) D69,
+		  MAX(CASE R-R1 WHEN 69 THEN B.ATTEND_STS_CD ELSE '0' END) D70,
+		  MAX(CASE R-R1 WHEN 70 THEN B.ATTEND_STS_CD ELSE '0' END) D71,      
+		  MAX(CASE R-R1 WHEN 71 THEN B.ATTEND_STS_CD ELSE '0' END) D72,      
+		  MAX(CASE R-R1 WHEN 72 THEN B.ATTEND_STS_CD ELSE '0' END) D73,      
+		  MAX(CASE R-R1 WHEN 73 THEN B.ATTEND_STS_CD ELSE '0' END) D74,      
+		  MAX(CASE R-R1 WHEN 74 THEN B.ATTEND_STS_CD ELSE '0' END) D75,      
+		  MAX(CASE R-R1 WHEN 75 THEN B.ATTEND_STS_CD ELSE '0' END) D76,      
+		  MAX(CASE R-R1 WHEN 76 THEN B.ATTEND_STS_CD ELSE '0' END) D77,      
+		  MAX(CASE R-R1 WHEN 77 THEN B.ATTEND_STS_CD ELSE '0' END) D78,      
+		  MAX(CASE R-R1 WHEN 78 THEN B.ATTEND_STS_CD ELSE '0' END) D79,      
+		  MAX(CASE R-R1 WHEN 79 THEN B.ATTEND_STS_CD ELSE '0' END) D80,      
+		  MAX(CASE R-R1 WHEN 80 THEN B.ATTEND_STS_CD ELSE '0' END) D81,      
+		  MAX(CASE R-R1 WHEN 81 THEN B.ATTEND_STS_CD ELSE '0' END) D82,      
+		  MAX(CASE R-R1 WHEN 82 THEN B.ATTEND_STS_CD ELSE '0' END) D83,      
+		  MAX(CASE R-R1 WHEN 83 THEN B.ATTEND_STS_CD ELSE '0' END) D84,      
+		  MAX(CASE R-R1 WHEN 84 THEN B.ATTEND_STS_CD ELSE '0' END) D85,      
+		  MAX(CASE R-R1 WHEN 85 THEN B.ATTEND_STS_CD ELSE '0' END) D86,      
+		  MAX(CASE R-R1 WHEN 86 THEN B.ATTEND_STS_CD ELSE '0' END) D87,      
+		  MAX(CASE R-R1 WHEN 87 THEN B.ATTEND_STS_CD ELSE '0' END) D88,      
+		  MAX(CASE R-R1 WHEN 88 THEN B.ATTEND_STS_CD ELSE '0' END) D89,      
+		  MAX(CASE R-R1 WHEN 89 THEN B.ATTEND_STS_CD ELSE '0' END) D90,      
+		  MAX(CASE R-R1 WHEN 90 THEN B.ATTEND_STS_CD ELSE '0' END) D91,      
+		  MAX(CASE R-R1 WHEN 91 THEN B.ATTEND_STS_CD ELSE '0' END) D92,      
+		  MAX(CASE R-R1 WHEN 92 THEN B.ATTEND_STS_CD ELSE '0' END) D93,      
+		  MAX(CASE R-R1 WHEN 93 THEN B.ATTEND_STS_CD ELSE '0' END) D94,      
+		  MAX(CASE R-R1 WHEN 94 THEN B.ATTEND_STS_CD ELSE '0' END) D95,      
+		  MAX(CASE R-R1 WHEN 95 THEN B.ATTEND_STS_CD ELSE '0' END) D96,      
+		  MAX(CASE R-R1 WHEN 96 THEN B.ATTEND_STS_CD ELSE '0' END) D97,      
+		  MAX(CASE R-R1 WHEN 97 THEN B.ATTEND_STS_CD ELSE '0' END) D98,      
+		  MAX(CASE R-R1 WHEN 98 THEN B.ATTEND_STS_CD ELSE '0' END) D99,      
+		  MAX(CASE R-R1 WHEN 99 THEN B.ATTEND_STS_CD ELSE '0' END) D100 		  		  
+      FROM
+      (
+        SELECT
+            ROW_NUMBER() OVER(ORDER BY AD.STUDENT_NO, AM.CLASSDAY, AM.CLASSHOUR_START_TIME) AS R, STUDENT_NO,
+            DECODE(AM.CLASS_TYPE_CD, 'G019C002', '휴강',
+            (SELECT 
+                CASE WHEN AH.CLASS_TYPE_CD = 'G019C0021' THEN '휴강'
+                     ELSE 
+                        CASE 
+                          WHEN AH.ATTEND_AUTH_REASON_CD = 'G024C006' THEN '공결'
+                            ELSE (SELECT CM.CODE_NAME FROM CHUL_TB_CODEMASTER CM WHERE CM.CODE = AH.ATTEND_STS_CD)
+                        END
+                END ATTEND_STS_CD            
+              FROM CHUL_TB_ATTENDDETHIST AH
+              WHERE AH.UNIV_CD = AM.UNIV_CD
+	              AND AH.YEAR = AM.YEAR
+	              AND AH.TERM_CD = AM.TERM_CD
+	              AND AH.SUBJECT_CD = AM.SUBJECT_CD
+	              AND AH.SUBJECT_DIV_CD = AM.SUBJECT_DIV_CD
+	              AND AH.CLASS_CD = AM.CLASS_CD
+	              AND AH.CLASSHOUR_START_TIME = AM.CLASSHOUR_START_TIME
+	              AND TRUNC(CLASSDAY) = TRUNC(AM.CLASSDAY)
+	              AND AH.STUDENT_NO = AD.STUDENT_NO
+	              AND AH.CLASS_TYPE_CD = AM.CLASS_TYPE_CD
+            )) ATTEND_STS_CD            
+        FROM V_CHUL_VW_ATTENDEE AD, CHUL_TB_ATTENDMASTER_ADDINFO AM
+	    WHERE AM.UNIV_CD = #{univ_cd}
+	    	AND AM.YEAR = #{year}
+			AND AM.TERM_CD = #{term_cd}
+			AND AM.SUBJECT_CD = #{subject_cd}
+			AND AM.SUBJECT_DIV_CD = #{subject_div_cd}
+			AND AM.PROF_NO = #{prof_no}
+			AND AM.CLASS_TYPE_CD != 'G019C002'
+	        AND AD.YEAR = AM.YEAR
+	        AND AD.TERM_CD = AM.TERM_CD 
+	        AND AD.SUBJECT_CD = AM.SUBJECT_CD
+	        AND AD.SUBJECT_DIV_CD = AM.SUBJECT_DIV_CD
+      ) B
+      JOIN
+      (
+        SELECT MIN(R11) AS R1, STUDENT_NO
+        FROM
+            (
+	        SELECT
+	            ROW_NUMBER() OVER(ORDER BY AD.STUDENT_NO, AM.CLASSDAY) AS R11, AD.STUDENT_NO
+	        FROM V_CHUL_VW_ATTENDEE AD, CHUL_TB_ATTENDMASTER_ADDINFO AM
+		    WHERE AM.UNIV_CD = #{univ_cd}
+		    	AND AM.YEAR = #{year}
+				AND AM.TERM_CD = #{term_cd}
+				AND AM.SUBJECT_CD = #{subject_cd}
+				AND AM.SUBJECT_DIV_CD = #{subject_div_cd}
+				AND AM.PROF_NO = #{prof_no}
+				AND AM.CLASS_TYPE_CD != 'G019C002'
+		        AND AD.YEAR = AM.YEAR
+		        AND AD.TERM_CD = AM.TERM_CD 
+		        AND AD.SUBJECT_CD = AM.SUBJECT_CD
+		        AND AD.SUBJECT_DIV_CD = AM.SUBJECT_DIV_CD
+            )
+        GROUP BY STUDENT_NO
+      ) A
+      ON B.STUDENT_NO = A.STUDENT_NO
+      GROUP BY B.STUDENT_NO
+      ORDER BY B.STUDENT_NO
+    ) STD_STAT, V_CHUL_VW_STUDENT STD,
+    (
+		SELECT
+			AH.STUDENT_NO, ATD.JOB_PASS,
+			COUNT (CASE WHEN AH.ATTEND_STS_CD = 'G023C002' AND (AH.ATTEND_AUTH_REASON_CD != 'G024C006' OR AH.ATTEND_AUTH_REASON_CD IS NULL) THEN 1 END) AS ATTEND_PRESENT_CNT,
+            COUNT (CASE WHEN AH.ATTEND_STS_CD = 'G023C002' AND AH.ATTEND_AUTH_REASON_CD = 'G024C006' THEN 1 END) AS ATTEND_GONGGYUL_CNT,
+			COUNT (CASE WHEN AH.ATTEND_STS_CD = 'G023C003' THEN 1 END) AS ATTEND_LATE_CNT,
+			COUNT (CASE WHEN AH.ATTEND_STS_CD = 'G023C004' THEN 1 END) AS ATTEND_ABSENT_CNT
+		FROM CHUL_TB_ATTENDDETHIST AH, CHUL_TB_ATTENDMASTER_ADDINFO AM, V_CHUL_VW_ATTENDEE ATD
+		WHERE AM.UNIV_CD = #{univ_cd}
+			AND AM.YEAR = #{year}
+			AND AM.TERM_CD = #{term_cd}
+			AND AM.SUBJECT_CD = #{subject_cd}
+			AND AM.SUBJECT_DIV_CD = #{subject_div_cd}
+			AND AM.PROF_NO = #{prof_no}
+			AND AM.CLASS_TYPE_CD != 'G019C002'
+			AND AH.CLASS_CD = AM.CLASS_CD
+			AND AH.PROF_NO = AM.PROF_NO
+			AND TRUNC(AH.CLASSDAY) = TRUNC(AM.CLASSDAY)
+			AND AH.CLASSHOUR_START_TIME = AM.CLASSHOUR_START_TIME
+			AND ATD.UNIV_CD = AM.UNIV_CD
+			AND ATD.YEAR = AM.YEAR
+			AND ATD.TERM_CD = AM.TERM_CD
+			AND ATD.SUBJECT_CD = AM.SUBJECT_CD
+      		AND ATD.SUBJECT_DIV_CD = AM.SUBJECT_DIV_CD
+      		AND AH.STUDENT_NO = ATD.STUDENT_NO
+		GROUP BY AH.STUDENT_NO, ATD.JOB_PASS
+    ) ATTEND_CNT
+    WHERE STD.UNIV_CD = #{univ_cd}
+      AND STD.STUDENT_NO = STD_STAT.STUDENT_NO
+      AND STD_STAT.STUDENT_NO = ATTEND_CNT.STUDENT_NO
+    ORDER BY STD.STUDENT_GRADE, STD.STUDENT_NO
+  )
+) PROF_STAT
+</select>
+
+<select id="getAdminCancelClassListCount" parameterType="map" resultType="int">
+SELECT
+	COUNT(*) 
+FROM V_CHUL_VW_ATTENDMASTER A,
+     V_CHUL_VW_PROF PROF
+WHERE 1=1
+	AND A.UNIV_CD = #{univ_cd}
+	AND A.YEAR = #{year}
+	AND A.TERM_CD = #{term_cd}
+	AND A.CLASS_TYPE_CD != 'G019C002'
+	AND A.CLASS_STS_CD = 'G020C003'
+	
+	<!-- 학교측 요청으로 주석 처리 -->
+	<!-- AND (A.CERT_TYPE IS NULL OR A.CERT_TYPE = '') -->
+	
+	AND (A.ATTEND_AUTH_CNT = 0 AND A.ATTEND_PRESENT_CNT = 0 AND A.ATTEND_LATE_CNT = 0)
+	AND PROF.UNIV_CD = A.UNIV_CD
+    AND PROF.PROF_NO = A.PROF_NO	
+	<if test='!searchValue.equals("")'>
+		<choose>
+			<when test='item.equals("class_name")'>
+				AND A.CLASS_NAME LIKE '%' || #{searchValue} || '%'
+			</when>
+			<when test='item.equals("prof_name")'>
+				AND A.PROF_NAME LIKE '%' || #{searchValue} || '%'
+			</when>
+		</choose>
+	</if>
+	<if test='current_date != null and !current_date.equals("")'>
+		AND TO_CHAR(A.CLASSDAY, 'YYYY-MM-DD') = #{current_date}
+	</if>
+</select>
+
+<select id="getAdminCancelClassList" parameterType="map" resultType="com.icerti.ezcerti.domain.Attendmaster">
+SELECT 
+	* 
+FROM
+(
+	SELECT
+		ROWNUM AS ROW_NO, A.*
+	FROM 
+	(
+	SELECT * FROM (
+		SELECT 
+			C1.CODE_NAME AS CLASS_TYPE_NAME,
+		    C2.CODE_NAME AS CLASS_STS_NAME,
+		    PROF.HP_NO AS ETC_VAL,
+		    PROF.JIKJONG AS PROF_JIKJONG,
+			A.* 
+		FROM 
+			V_CHUL_VW_ATTENDMASTER A, 
+			CHUL_TB_CODEMASTER C1, CHUL_TB_CODEMASTER C2,
+      		V_CHUL_VW_PROF PROF
+		WHERE 1=1
+			AND A.UNIV_CD = #{univ_cd}
+			AND A.YEAR = #{year}
+			AND A.TERM_CD = #{term_cd}
+			AND A.CLASS_TYPE_CD != 'G019C002'
+			AND A.CLASS_STS_CD = 'G020C003'
+			
+			<!-- 학교측 요청으로 주석 처리 -->
+			<!-- AND (A.CERT_TYPE IS NULL OR A.CERT_TYPE = '') -->
+			
+			AND (A.ATTEND_AUTH_CNT = 0 AND A.ATTEND_PRESENT_CNT = 0 AND A.ATTEND_LATE_CNT = 0)
+			AND A.CLASS_TYPE_CD = C1.CODE
+			AND A.CLASS_STS_CD = C2.CODE
+			AND PROF.UNIV_CD = A.UNIV_CD
+    		AND PROF.PROF_NO = A.PROF_NO	
+			<if test='!searchValue.equals("")'>
+				<choose>
+					<when test='item.equals("class_name")'>
+						AND A.CLASS_NAME LIKE '%' || #{searchValue} || '%'
+					</when>
+					<when test='item.equals("prof_name")'>
+						AND A.PROF_NAME LIKE '%' || #{searchValue} || '%'
+					</when>
+				</choose>
+			</if>
+			<if test='current_date != null and !current_date.equals("")'>
+				AND TO_CHAR(A.CLASSDAY, 'YYYY-MM-DD') = #{current_date}
+			</if>
+			) A			
+		WHERE 1=1 			
+		<choose>
+			<when test='sortField != null and !sortField.equals("")'>
+				ORDER BY ${sortField} ${sortOrder}
+			</when>
+			<otherwise>
+				ORDER BY CLASSDAY, CLASSHOUR_START_TIME ASC
+			</otherwise>
+		</choose>
+	) A
+<![CDATA[		    	
+	WHERE ROWNUM <= #{endRow}
+)   
+WHERE ROW_NO >= #{startRow}
+]]>	
+</select>
+
+<select id="getAdminAbsenceListCount" parameterType="map" resultType="int">
+SELECT 
+	COUNT(*)
+FROM 
+	(
+		SELECT 
+			a.STUDENT_NO,
+    		TRUNC(SUM(a.CNT2), 1) AS ABSENCE_CNT
+	    FROM
+	      (
+	      	SELECT * FROM 
+		  	(
+				SELECT 
+					AH.STUDENT_NO, 
+					COUNT(*) AS CNT,
+					COUNT(*)/(	
+								SELECT 
+									decode(COUNT(*), 0, null, COUNT(*))
+								FROM V_CHUL_VW_CLASS
+								WHERE 1            =1
+								AND YEAR           = #{year}
+								AND TERM_CD        = #{term_cd}
+								AND SUBJECT_CD     = AH.SUBJECT_CD
+								AND SUBJECT_DIV_CD = AH.SUBJECT_DIV_CD
+							  ) AS CNT2,
+					AH.SUBJECT_CD,
+			        AH.SUBJECT_DIV_CD,
+					(
+						SELECT
+							COUNT(*)
+						FROM V_CHUL_VW_CLASS
+						WHERE 1=1
+						AND YEAR = #{year}
+						AND TERM_CD = #{term_cd}
+						AND SUBJECT_CD = AH.SUBJECT_CD
+						AND SUBJECT_DIV_CD = AH.SUBJECT_DIV_CD
+				    ) AS SISU 
+				FROM CHUL_TB_ATTENDDETHIST AH 
+		        WHERE AH.YEAR = #{year}
+					AND AH.TERM_CD = #{term_cd}
+					AND AH.ATTEND_STS_CD = 'G023C004'
+					AND AH.CLASS_TYPE_CD != 'G019C002'
+					AND AH.PROF_NO != '999999'
+					
+					<if test='startDate != null and !startDate.equals("")'>
+						AND TRUNC(AH.CLASSDAY) BETWEEN #{startDate} AND #{endDate}
+					</if>
+					
+					<if test='dept_name != null and !dept_name.equals("")'>
+						AND AH.STUDENT_DEPT_NAME LIKE '%' || #{dept_name} || '%'
+					</if>
+					
+					<if test='student_no != null and !student_no.equals("")'>
+						AND AH.STUDENT_NO LIKE '%' || #{student_no} || '%'
+					</if>
+					
+					<if test='current_date != null and !current_date.equals("")'>
+						AND TO_CHAR(AH.CLASSDAY, 'YYYY-MM-DD') = #{current_date}
+					</if>
+					
+		       GROUP BY AH.STUDENT_NO, AH.SUBJECT_CD, AH.SUBJECT_DIV_CD
+			) WHERE 1=1
+				AND NVL(CNT/decode(SISU, 0, null, SISU), 0) <![CDATA[>=]]> 2	
+	       ) a
+	    GROUP BY a.STUDENT_NO
+     ) A, V_CHUL_VW_STUDENT STD
+WHERE A.STUDENT_NO = STD.STUDENT_NO
+	AND STD.STUDENT_STS_CD IN ('G012C001', 'G012C006')
+	<if test='student_grade != "all"'>
+		AND STD.STUDENT_GRADE = #{student_grade}
+	</if>
+</select>
+
+<select id="getAdminAbsenceList" parameterType="map" resultType="com.icerti.ezcerti.domain.Student">
+SELECT 
+	* 
+FROM (
+	SELECT
+		ROWNUM ROW_NO, A.*
+	FROM (
+		SELECT * FROM (
+			SELECT 
+	    		B.CODE_NAME AS STUDENT_STS_NAME, 
+				A.ABSENCE_CNT, STD.*
+			FROM (
+				SELECT a.STUDENT_NO, 
+					   TRUNC(SUM(a.CNT2), 1) AS ABSENCE_CNT
+	        	FROM (
+	        			SELECT * FROM 
+					  	(
+							SELECT 
+								AH.STUDENT_NO, 
+								COUNT(*) AS CNT,
+								COUNT(*)/(	
+											SELECT 
+												decode(COUNT(*), 0, null, COUNT(*))												
+											FROM V_CHUL_VW_CLASS
+											WHERE 1            =1
+											AND YEAR           = #{year}
+											AND TERM_CD        = #{term_cd}
+											AND SUBJECT_CD     = AH.SUBJECT_CD
+											AND SUBJECT_DIV_CD = AH.SUBJECT_DIV_CD
+										  ) AS CNT2,
+								AH.SUBJECT_CD,
+				              	AH.SUBJECT_DIV_CD,
+								(
+									SELECT
+										COUNT(*)
+									FROM V_CHUL_VW_CLASS
+									WHERE 1=1
+									AND YEAR = #{year}
+									AND TERM_CD = #{term_cd}
+									AND SUBJECT_CD = AH.SUBJECT_CD
+									AND SUBJECT_DIV_CD = AH.SUBJECT_DIV_CD
+							    ) AS SISU
+							FROM CHUL_TB_ATTENDDETHIST AH 
+							WHERE AH.YEAR = #{year}
+								AND AH.TERM_CD = #{term_cd}
+								AND AH.ATTEND_STS_CD = 'G023C004'
+								AND AH.CLASS_TYPE_CD != 'G019C002'
+								AND AH.PROF_NO != '999999'
+								
+								<if test='startDate != null and !startDate.equals("")'>
+									AND TRUNC(AH.CLASSDAY) BETWEEN #{startDate} AND #{endDate}
+								</if>
+								
+								<if test='dept_name != null and !dept_name.equals("")'>
+									AND AH.STUDENT_DEPT_NAME LIKE '%' || #{dept_name} || '%'
+								</if>
+								
+								<if test='student_no != null and !student_no.equals("")'>
+									AND AH.STUDENT_NO LIKE '%' || #{student_no} || '%'
+								</if> 
+				 					
+								<if test='current_date != null and !current_date.equals("")'>
+									AND TO_CHAR(AH.CLASSDAY, 'YYYY-MM-DD') = #{current_date}
+								</if>
+								
+							GROUP BY AH.STUDENT_NO, AH.SUBJECT_CD, AH.SUBJECT_DIV_CD
+						) WHERE 1=1
+							AND NVL(CNT/decode(SISU, 0, null, SISU), 0) <![CDATA[>=]]> 2
+					 ) a        
+	         	GROUP BY a.STUDENT_NO
+				) A, V_CHUL_VW_STUDENT STD, CHUL_TB_CODEMASTER B 
+			WHERE A.STUDENT_NO = STD.STUDENT_NO
+				AND STD.STUDENT_STS_CD=B.CODE 
+				AND STD.STUDENT_STS_CD IN ('G012C001', 'G012C006')
+				<if test='student_grade != "all"'>
+					AND STD.STUDENT_GRADE = #{student_grade}
+				</if>
+			) A			
+		WHERE 1=1 			
+		<choose>
+			<when test='sortField != null and !sortField.equals("")'>
+				ORDER BY ${sortField} ${sortOrder}
+			</when>
+			<otherwise>
+				ORDER BY STUDENT_NAME
+			</otherwise>
+		</choose>
+	) A   
+<![CDATA[		    	
+	WHERE ROWNUM <= #{endRow}
+)   
+WHERE ROW_NO >= #{startRow}
+]]>	
+</select>
+
+<select id="getAdminAbsenceListExcelCount" parameterType="map" resultType="int">
+	SELECT COUNT(*)
+	FROM (   
+			 SELECT 
+		       STD.STUDENT_NAME, STD.COLL_NAME, STD.DEPT_NAME, STD.STUDENT_GRADE, STD.HP_NO,
+		       CLS.CLASS_NAME,CLS.HAKJUM, CLS.SIGAN, CLS.PRA_SIGAN, CLS.TOTAL_CNT,
+		       PROF.PROF_NAME, PROF.DEPT_NAME AS PROF_DEFT_NAME, PROF.HP_NO AS PROF_HP_NO,
+		       B.CODE_NAME AS STUDENT_STS_NAME, TMP.*
+		     FROM (
+		     			SELECT 
+		     				A.*,
+			              (SELECT COUNT(*)
+			                FROM CHUL_TB_ATTENDMASTER_ADDINFO AM
+			                WHERE UNIV_CD = #{univ_cd}
+			                  AND YEAR = #{year}
+			                  AND TERM_CD = #{term_cd}
+			                  AND SUBJECT_CD = A.SUBJECT_CD 
+			                  AND SUBJECT_DIV_CD = A.SUBJECT_DIV_CD
+			                  AND PROF_NO = A.PROF_NO
+			                  AND CLASS_TYPE_CD != 'G019C002'
+							<if test='startDate != null and !startDate.equals("")'>
+								AND TRUNC(CLASSDAY) BETWEEN #{startDate} AND #{endDate}
+							</if>			                  
+			                ) AS CLASS_CNT          		     				 
+		     			FROM 
+						(
+							SELECT 
+							   AH.STUDENT_NO,
+				               COUNT(*) AS ABSENCE_CNT,
+				               AH.SUBJECT_CD,
+				               AH.SUBJECT_DIV_CD,
+				               AH.PROF_NO
+							FROM CHUL_TB_ATTENDDETHIST AH 
+					        WHERE AH.UNIV_CD = #{univ_cd}
+					        	AND AH.YEAR = #{year}
+								AND AH.TERM_CD = #{term_cd}
+								AND AH.ATTEND_STS_CD = 'G023C004'
+								AND AH.CLASS_TYPE_CD != 'G019C002'
+								AND AH.PROF_NO != '999999'
+								<if test='startDate != null and !startDate.equals("")'>
+									AND TRUNC(AH.CLASSDAY) BETWEEN #{startDate} AND #{endDate}
+								</if>
+								
+								<if test='dept_name != null and !dept_name.equals("")'>
+									AND AH.STUDENT_DEPT_NAME LIKE '%' || #{dept_name} || '%'
+								</if>
+								
+								<if test='student_no != null and !student_no.equals("")'>
+									AND AH.STUDENT_NO LIKE '%' || #{student_no} || '%'
+								</if>
+								
+								<if test='current_date != null and !current_date.equals("")'>
+									AND TO_CHAR(AH.CLASSDAY, 'YYYY-MM-DD') = #{current_date}
+								</if>
+					        GROUP BY AH.STUDENT_NO,
+				                     AH.SUBJECT_CD,
+				                     AH.SUBJECT_DIV_CD,
+				                     AH.PROF_NO
+			            ) A 
+			            WHERE 1=1
+ 				  ) TMP
+			INNER JOIN CHUL_TB_STUDENT STD
+			        ON TMP.STUDENT_NO = STD.STUDENT_NO
+			INNER JOIN CHUL_TB_CODEMASTER B 
+			        ON STD.STUDENT_STS_CD=B.CODE 
+			INNER JOIN (
+							SELECT 
+							  UNIV_CD, TERM_CD, SUBJECT_CD, SUBJECT_DIV_CD, CLASS_NAME,
+							  HAKJUM, SIGAN, PRA_SIGAN, COUNT(*) as TOTAL_CNT
+							FROM CHUL_TB_CLASS CLS
+							WHERE UNIV_CD = #{univ_cd}
+							AND YEAR = #{year}
+							AND TERM_CD = #{term_cd}
+							GROUP BY UNIV_CD, TERM_CD, SUBJECT_CD, SUBJECT_DIV_CD, CLASS_NAME,
+				  										     HAKJUM, SIGAN, PRA_SIGAN
+			   		   ) CLS
+	   			    ON TMP.SUBJECT_CD = CLS.SUBJECT_CD
+				   AND TMP.SUBJECT_DIV_CD = CLS.SUBJECT_DIV_CD
+			INNER JOIN V_CHUL_VW_PROF PROF
+			        ON TMP.PROF_NO = PROF.PROF_NO
+	) A
+ 	WHERE 1=1
+ 		AND ABSENCE_CNT >= ((SIGAN + PRA_SIGAN) * 2)
+	<if test='student_grade != "all"'>
+		AND STUDENT_GRADE = #{student_grade}
+	</if>
+</select>
+
+<select id="getAdminAbsenceListExcel" parameterType="map" resultType="com.icerti.ezcerti.domain.Student">
+SELECT 
+	* 
+FROM (
+	SELECT
+		ROWNUM ROW_NO, A.*
+	FROM (
+			SELECT *
+			FROM (	
+					SELECT *
+					FROM (
+							 SELECT 
+						       STD.STUDENT_NAME, STD.COLL_NAME, STD.DEPT_NAME, STD.STUDENT_GRADE, STD.HP_NO,
+						       CLS.CLASS_NAME,CLS.HAKJUM, CLS.SIGAN, CLS.PRA_SIGAN, CLS.TOTAL_CNT,
+						       PROF.PROF_NAME, PROF.DEPT_NAME AS PROF_DEFT_NAME, PROF.HP_NO AS PROF_HP_NO,
+						       B.CODE_NAME AS STUDENT_STS_NAME, TMP.*
+						     FROM (
+						     		 SELECT 
+						     		 	A.*,
+						              (SELECT COUNT(*)
+						                FROM CHUL_TB_ATTENDMASTER_ADDINFO AM
+						                WHERE UNIV_CD = #{univ_cd}
+						                  AND YEAR = #{year} 
+						                  AND TERM_CD = #{term_cd}
+						                  AND SUBJECT_CD = A.SUBJECT_CD 
+						                  AND SUBJECT_DIV_CD = A.SUBJECT_DIV_CD
+						                  AND PROF_NO = A.PROF_NO
+						                  AND CLASS_TYPE_CD != 'G019C002'
+										<if test='startDate != null and !startDate.equals("")'>
+											AND TRUNC(CLASSDAY) BETWEEN #{startDate} AND #{endDate}
+										</if>
+						                ) AS CLASS_CNT          						     		 	 
+						     		 FROM 
+									 (
+										 SELECT 
+											AH.STUDENT_NO,
+											COUNT(*) AS ABSENCE_CNT,
+											AH.SUBJECT_CD,
+											AH.SUBJECT_DIV_CD,
+											AH.PROF_NO
+							             FROM CHUL_TB_ATTENDDETHIST AH
+							             WHERE AH.UNIV_CD = #{univ_cd}
+							               AND AH.YEAR = #{year}
+									 	   AND AH.TERM_CD = #{term_cd}
+									 	   AND AH.ATTEND_STS_CD = 'G023C004'
+									 	   AND AH.CLASS_TYPE_CD != 'G019C002'
+									 	   AND AH.PROF_NO != '999999'
+											<if test='startDate != null and !startDate.equals("")'>
+												AND TRUNC(AH.CLASSDAY) BETWEEN #{startDate} AND #{endDate}
+											</if>
+											
+											<if test='dept_name != null and !dept_name.equals("")'>
+												AND AH.STUDENT_DEPT_NAME LIKE '%' || #{dept_name} || '%'
+											</if>
+											
+											<if test='student_no != null and !student_no.equals("")'>
+												AND AH.STUDENT_NO LIKE '%' || #{student_no} || '%'
+											</if> 
+													
+											<if test='current_date != null and !current_date.equals("")'>
+												AND TO_CHAR(AH.CLASSDAY, 'YYYY-MM-DD') = #{current_date}
+											</if>
+							             GROUP BY AH.STUDENT_NO,
+							                   AH.SUBJECT_CD,
+							                   AH.SUBJECT_DIV_CD,
+							                   AH.PROF_NO
+						             ) A 
+						             WHERE 1=1
+						           ) TMP
+						     INNER JOIN 
+						     	   CHUL_TB_STUDENT STD
+						        ON TMP.STUDENT_NO = STD.STUDENT_NO
+						     INNER JOIN CHUL_TB_CODEMASTER B 
+							    ON STD.STUDENT_STS_CD=B.CODE 
+							 INNER JOIN (
+											SELECT 
+											  UNIV_CD, TERM_CD, SUBJECT_CD, SUBJECT_DIV_CD, CLASS_NAME,
+											  HAKJUM, SIGAN, PRA_SIGAN, COUNT(*) as TOTAL_CNT
+											FROM CHUL_TB_CLASS CLS
+											WHERE UNIV_CD = #{univ_cd}
+											AND YEAR = #{year}
+											AND TERM_CD = #{term_cd}
+											GROUP BY UNIV_CD, TERM_CD, SUBJECT_CD, SUBJECT_DIV_CD, CLASS_NAME,
+          										     HAKJUM, SIGAN, PRA_SIGAN											
+										 ) CLS
+  							    ON TMP.SUBJECT_CD = CLS.SUBJECT_CD
+							   AND TMP.SUBJECT_DIV_CD = CLS.SUBJECT_DIV_CD
+						     INNER JOIN V_CHUL_VW_PROF PROF
+						        ON TMP.PROF_NO = PROF.PROF_NO
+					) A
+				    WHERE 1=1
+				    	AND ABSENCE_CNT >= ((SIGAN + PRA_SIGAN) * 2)
+					<if test='student_grade != "all"'>
+						AND STUDENT_GRADE = #{student_grade}
+					</if>
+			) A			
+			WHERE 1=1 	
+			<choose>
+				<when test='sortField != null and !sortField.equals("")'>
+					ORDER BY ${sortField} ${sortOrder}
+				</when>
+				<otherwise>
+					ORDER BY STUDENT_NAME
+				</otherwise>
+			</choose>
+	) A   
+<![CDATA[		    	
+	WHERE ROWNUM <= #{endRow}
+)   
+WHERE ROW_NO >= #{startRow}
+]]>	
+	
+	 	
+<!-- SELECT 
+	* 
+FROM (
+	SELECT
+		ROWNUM ROW_NO, A.*
+	FROM (
+		SELECT * FROM (
+			SELECT 
+	    		B.CODE_NAME AS STUDENT_STS_NAME, 
+				A.ABSENCE_CNT, STD.*
+			FROM (
+				SELECT a.STUDENT_NO, 
+					   SUM(a.CNT) AS ABSENCE_CNT 
+	        	FROM (
+						SELECT AH.STUDENT_NO, COUNT(*) AS CNT,
+							   AH.SUBJECT_CD,
+			              	   AH.SUBJECT_DIV_CD
+						FROM CHUL_TB_ATTENDDETHIST AH 
+						WHERE AH.YEAR = #{year}
+							AND AH.TERM_CD = #{term_cd}
+							AND AH.ATTEND_STS_CD = 'G023C004'
+							
+							<if test='startDate != null and !startDate.equals("")'>
+								AND TRUNC(AH.CLASSDAY) BETWEEN #{startDate} AND #{endDate}
+							</if>
+							
+							<if test='dept_name != null and !dept_name.equals("")'>
+								AND AH.STUDENT_DEPT_NAME LIKE '%' || #{dept_name} || '%'
+							</if>
+							
+							<if test='student_no != null and !student_no.equals("")'>
+								AND AH.STUDENT_NO LIKE '%' || #{student_no} || '%'
+							</if> 
+			 					
+							<if test='current_date != null and !current_date.equals("")'>
+								AND TO_CHAR(AH.CLASSDAY, 'YYYY-MM-DD') = #{current_date}
+							</if>
+							
+						GROUP BY AH.STUDENT_NO, AH.SUBJECT_CD, AH.SUBJECT_DIV_CD
+						HAVING COUNT(*) <![CDATA[>=]]> 3
+					 ) a        
+	         	GROUP BY a.STUDENT_NO
+				) A, V_CHUL_VW_STUDENT STD, CHUL_TB_CODEMASTER B 
+			WHERE A.STUDENT_NO = STD.STUDENT_NO
+				AND STD.STUDENT_STS_CD=B.CODE 
+				AND STD.STUDENT_STS_CD IN ('G012C001', 'G012C006')
+				<if test='student_grade != "all"'>
+					AND STD.STUDENT_GRADE = #{student_grade}
+				</if>
+			) A			
+		WHERE 1=1 			
+		<choose>
+			<when test='sortField != null and !sortField.equals("")'>
+				ORDER BY ${sortField} ${sortOrder}
+			</when>
+			<otherwise>
+				ORDER BY STUDENT_NAME
+			</otherwise>
+		</choose>
+	) A   
+<![CDATA[		    	
+	WHERE ROWNUM <= #{endRow}
+)   
+WHERE ROW_NO >= #{startRow}
+]]>	 -->
+</select>
+
+<!-- Prof Usage Stats (2015.10.29) -->
+<select id="getAdminProfUsageStatsCount" parameterType="map" resultType="int">
+SELECT
+  COUNT(*)
+FROM
+  (SELECT B.PROF_NO, B.TERM_CD, COUNT(B.PROF_NO) AS TOT_CNT
+    FROM CHUL_TB_ATTENDMASTER_ADDINFO B, V_CHUL_VW_PROF PROF
+    WHERE 1=1
+      AND B.YEAR = #{year}
+      AND B.TERM_CD = #{term_cd}
+      AND B.CLASS_STS_CD = 'G020C003'
+      AND B.CLASS_TYPE_CD != 'G019C002' 
+      AND B.PROF_NO = PROF.PROF_NO
+	<if test='!searchValue.equals("")'>
+		<choose>
+			<when test='item.equals("coll_name")'>
+				AND PROF.COLL_NAME LIKE '%' || #{searchValue} || '%'
+			</when>
+			<when test='item.equals("dept_name")'>
+				AND PROF.DEPT_NAME LIKE '%' || #{searchValue} || '%'
+			</when>
+			<when test='item.equals("prof_name")'>
+				AND PROF.PROF_NAME LIKE '%' || #{searchValue} || '%'
+			</when>
+			<when test='item.equals("prof_no")'>
+				AND PROF.PROF_NO LIKE '%' || #{searchValue} || '%'
+			</when>
+		</choose>
+	</if>
+	<if test='!sortField.equals("")'>
+		AND PROF.PROF_ADM_CD = #{sortField}
+	</if>	        	      
+      AND B.ATTENDEE_CNT != 0
+     GROUP BY B.PROF_NO, B.TERM_CD
+  ) 
+</select>
+
+<!-- Prof Usage Stats (2015.10.29) -->
+<select id="getAdminProfUsageStats" resultType="map">
+SELECT * FROM
+(
+	SELECT
+		ROWNUM AS ROW_NO, A.*
+	FROM
+	(
+	SELECT		
+		P.COLL_NAME, P.DEPT_NAME, 
+		D.PROF_NO, P.PROF_NAME,
+		D.TOT_CNT, D.PROC_CNT, D.NOT_PROC_CNT, P.PROF_ADM_CD,
+		TRUNC(100-((D.NOT_PROC_CNT / D.TOT_CNT) * 100),1) AS USAGE 
+	 FROM
+	 (
+	 SELECT
+	   A.PROF_NO, A.TOT_CNT,
+	   NVL((
+	   SELECT COUNT(B.PROF_NO) AS PROC_CNT
+		FROM CHUL_TB_ATTENDMASTER_ADDINFO B, V_CHUL_VW_PROF PROF
+		WHERE 1=1
+			AND B.YEAR = #{year}
+			AND B.TERM_CD = #{term_cd}
+			AND B.CLASS_STS_CD='G020C003'
+			AND B.CLASS_TYPE_CD != 'G019C002' 
+			
+			AND (B.ATTEND_PRESENT_CNT != 0
+				 OR B.CERT_TYPE IS NOT NULL)
+			
+			AND B.PROF_NO = A.PROF_NO
+			AND B.PROF_NO = PROF.PROF_NO
+			<if test='!searchValue.equals("")'>
+				<choose>
+					<when test='item.equals("coll_name")'>
+						AND PROF.COLL_NAME LIKE '%' || #{searchValue} || '%'
+					</when>
+					<when test='item.equals("dept_name")'>
+						AND PROF.DEPT_NAME LIKE '%' || #{searchValue} || '%'
+					</when>
+					<when test='item.equals("prof_name")'>
+						AND PROF.PROF_NAME LIKE '%' || #{searchValue} || '%'
+					</when>
+					<when test='item.equals("prof_no")'>
+						AND PROF.PROF_NO LIKE '%' || #{searchValue} || '%'
+					</when>
+				</choose>
+			</if>        
+			AND B.ATTENDEE_CNT != 0
+		GROUP BY B.PROF_NO, B.TERM_CD
+	   ), 0) AS PROC_CNT,
+	   NVL((
+	   SELECT COUNT(B.PROF_NO) AS NOT_PROC_CNT
+		FROM CHUL_TB_ATTENDMASTER_ADDINFO B, V_CHUL_VW_PROF PROF
+		WHERE 1=1
+			AND B.YEAR = #{year}
+			AND B.TERM_CD = #{term_cd}
+			AND B.CLASS_STS_CD='G020C003'
+			AND B.CLASS_TYPE_CD != 'G019C002' 
+			
+			AND B.ATTEND_PRESENT_CNT = 0
+			AND B.CERT_TYPE IS NULL
+			
+			AND B.PROF_NO = A.PROF_NO
+			AND B.PROF_NO = PROF.PROF_NO
+			<if test='!searchValue.equals("")'>
+				<choose>
+					<when test='item.equals("coll_name")'>
+						AND PROF.COLL_NAME LIKE '%' || #{searchValue} || '%'
+					</when>
+					<when test='item.equals("dept_name")'>
+						AND PROF.DEPT_NAME LIKE '%' || #{searchValue} || '%'
+					</when>
+					<when test='item.equals("prof_name")'>
+						AND PROF.PROF_NAME LIKE '%' || #{searchValue} || '%'
+					</when>
+					<when test='item.equals("prof_no")'>
+						AND PROF.PROF_NO LIKE '%' || #{searchValue} || '%'
+					</when>
+				</choose>
+			</if>        	      
+			AND B.ATTENDEE_CNT != 0
+		GROUP BY B.PROF_NO, B.TERM_CD
+	   ), 0) AS NOT_PROC_CNT
+	 FROM
+	   (
+	   SELECT B.PROF_NO, B.TERM_CD, COUNT(B.PROF_NO) AS TOT_CNT
+		FROM CHUL_TB_ATTENDMASTER_ADDINFO B, V_CHUL_VW_PROF PROF
+		WHERE 1=1
+			AND B.YEAR = #{year}
+			AND B.TERM_CD = #{term_cd}
+			AND B.CLASS_STS_CD='G020C003'
+			AND B.CLASS_TYPE_CD != 'G019C002' 
+			AND B.PROF_NO = PROF.PROF_NO
+			<if test='!searchValue.equals("")'>
+				<choose>
+					<when test='item.equals("coll_name")'>
+						AND PROF.COLL_NAME LIKE '%' || #{searchValue} || '%'
+					</when>
+					<when test='item.equals("dept_name")'>
+						AND PROF.DEPT_NAME LIKE '%' || #{searchValue} || '%'
+					</when>
+					<when test='item.equals("prof_name")'>
+						AND PROF.PROF_NAME LIKE '%' || #{searchValue} || '%'
+					</when>
+					<when test='item.equals("prof_no")'>
+						AND PROF.PROF_NO LIKE '%' || #{searchValue} || '%'
+					</when>
+				</choose>
+			</if>        	      
+			AND B.ATTENDEE_CNT != 0
+		GROUP BY B.PROF_NO, B.TERM_CD
+	   ) A
+	 ) D, V_CHUL_VW_PROF P
+	 WHERE D.PROF_NO = P.PROF_NO
+		<if test='!searchValue.equals("")'>
+			<choose>
+				<when test='item.equals("coll_name")'>
+					AND P.COLL_NAME LIKE '%' || #{searchValue} || '%'
+				</when>
+				<when test='item.equals("dept_name")'>
+					AND P.DEPT_NAME LIKE '%' || #{searchValue} || '%'
+				</when>
+				<when test='item.equals("prof_name")'>
+					AND P.PROF_NAME LIKE '%' || #{searchValue} || '%'
+				</when>
+				<when test='item.equals("prof_no")'>
+					AND P.PROF_NO LIKE '%' || #{searchValue} || '%'
+				</when>
+			</choose>
+		</if>
+		<if test='!sortField.equals("")'>
+			AND P.PROF_ADM_CD = #{sortField}
+		</if>	        	      
+	 ORDER BY P.PROF_NO
+  ) A
+<![CDATA[		    	
+  WHERE ROWNUM <= #{endRow}
+)   
+WHERE row_no >= #{startRow}
+]]>
+</select> 
+
+</mapper>

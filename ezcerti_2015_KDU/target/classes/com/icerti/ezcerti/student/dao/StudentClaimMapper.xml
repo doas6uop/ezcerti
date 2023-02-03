@@ -1,0 +1,144 @@
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.icerti.ezcerti.student.dao.StudentClaimMapper">
+
+<insert id="insertStudentAttendClaim" parameterType="com.icerti.ezcerti.domain.Claim">
+INSERT INTO CHUL_TB_claim
+	(claim_no,univ_cd,year,term_cd,class_cd,classday
+	,classhour_start_time,class_name,prof_no,prof_name,student_no
+	,student_name,student_coll_name,student_dept_name,before_claim_cd,ask_claim_cd
+	,reply_claim_cd,claim_sts_cd,ask_claim_content,reply_claim_content,ask_claim_time
+	,reply_claim_time,reg_etc,reg_date)
+VALUES
+	((SELECT FN_GET_CLAIM_NO AS claim_no FROM DUAL),#{univ_cd},#{year},#{term_cd},#{class_cd},#{classday}
+	,#{classhour_start_time},#{class_name},#{prof_no},#{prof_name},#{student_no}
+	,#{student_name},#{student_coll_name},#{student_dept_name},#{before_claim_cd},#{ask_claim_cd}
+	,NULL,#{claim_sts_cd},#{ask_claim_content},NULL,SYSDATE
+	,NULL,NULL,SYSDATE)	
+</insert>
+
+<insert id="insertStudentAttendImprove" parameterType="com.icerti.ezcerti.domain.Claim">
+INSERT INTO CHUL_TB_IMPROVE
+	(improve_no,univ_cd,year,term_cd,class_cd,classday
+	,classhour_start_time,class_name,prof_no,prof_name,class_improve_content,reg_etc,reg_date,student_no)
+VALUES
+	((SELECT FN_GET_CLAIM_NO AS claim_no FROM DUAL),#{univ_cd},#{year},#{term_cd},#{class_cd},#{classday}
+	,#{classhour_start_time},#{class_name},#{prof_no},#{prof_name},#{ask_claim_content},NULL,SYSDATE,#{student_no})	
+</insert>
+
+<delete id="deleteStudentAttendImprove" parameterType="com.icerti.ezcerti.domain.Claim">
+DELETE FROM CHUL_TB_IMPROVE
+	WHERE improve_no = #{improve_no}
+</delete>
+
+<select id="getStudentClaimList" parameterType="map" resultType="com.icerti.ezcerti.domain.Claim">
+SELECT *
+FROM
+	(SELECT ROWNUM row_no, 
+			c1.code_name AS claim_sts_name, 
+			c2.code_name AS before_claim_name, 
+			c3.code_name AS ask_claim_name,
+			c4.code_name AS reply_claim_name,  
+			a.*
+	FROM
+		(SELECT *
+		FROM CHUL_TB_claim
+		WHERE univ_cd=#{univ_cd}
+		AND year=#{year}
+		AND term_cd=#{term_cd}
+		AND student_no=#{student_no}
+		<if test='!class_cd.equals("")'>
+		AND class_cd=#{class_cd}
+		</if>
+		<if test='!claim_sts_cd.equals("")'>
+		AND claim_sts_cd=#{claim_sts_cd}
+		</if>
+		ORDER BY claim_no desc) a, CHUL_TB_codemaster c1, CHUL_TB_codemaster c2, CHUL_TB_codemaster c3, CHUL_TB_codemaster c4
+	WHERE a.claim_sts_cd=c1.code
+	AND a.before_claim_cd=c2.code
+	AND a.ask_claim_cd=c3.code
+	AND a.reply_claim_cd=c4.code(+)
+<![CDATA[
+	AND ROWNUM <= #{endRow}) a
+WHERE row_no >= #{startRow}
+]]>
+</select>
+
+<select id="getStudentClaimListCount" parameterType="map" resultType="int">
+SELECT COUNT(*)
+FROM CHUL_TB_claim
+WHERE univ_cd=#{univ_cd}
+AND year=#{year}
+AND term_cd=#{term_cd}
+AND student_no=#{student_no}
+<if test='!class_cd.equals("")'>
+AND class_cd=#{class_cd}
+</if>
+<if test='!claim_sts_cd.equals("")'>
+AND claim_sts_cd=#{claim_sts_cd}
+</if>
+</select>
+
+<select id="getStudentClaimView" resultType="com.icerti.ezcerti.domain.Claim">
+SELECT c1.code_name AS claim_sts_name, 
+	   c2.code_name AS before_claim_name, 
+	   c3.code_name AS ask_claim_name,
+	   c4.code_name AS reply_claim_name,  
+	   a.*
+FROM
+	(SELECT *
+	FROM CHUL_TB_claim
+	WHERE univ_cd=#{univ_cd}
+		AND year=#{year}
+		AND claim_no=#{claim_no}) a, CHUL_TB_codemaster c1, CHUL_TB_codemaster c2, CHUL_TB_codemaster c3, CHUL_TB_codemaster c4
+WHERE a.claim_sts_cd=c1.code
+AND a.before_claim_cd=c2.code
+AND a.ask_claim_cd=c3.code
+AND a.reply_claim_cd=c4.code(+)	
+</select>
+
+<select id="getStudentImproveList" parameterType="map" resultType="com.icerti.ezcerti.domain.Claim">
+SELECT *
+FROM
+	(SELECT ROWNUM row_no, 
+			a.*
+	FROM
+		(SELECT *
+		FROM CHUL_TB_IMPROVE
+		WHERE univ_cd=#{univ_cd}
+			AND year=#{year}
+			AND term_cd=#{term_cd}
+			AND student_no=#{student_no}
+			<if test='!class_cd.equals("")'>
+			AND class_cd=#{class_cd}
+			</if>
+		ORDER BY improve_no desc) a
+	WHERE 1=1
+<![CDATA[
+	AND ROWNUM <= #{endRow}) a
+WHERE row_no >= #{startRow}
+]]>
+</select>
+
+<select id="getStudentImproveListCount" parameterType="map" resultType="int">
+SELECT 
+	COUNT(*)
+FROM CHUL_TB_IMPROVE
+WHERE univ_cd=#{univ_cd}
+	AND year=#{year}
+	AND term_cd=#{term_cd}
+	AND student_no=#{student_no}
+	<if test='!class_cd.equals("")'>
+		AND class_cd=#{class_cd}
+	</if>
+</select>
+
+<select id="getStudentImproveView" resultType="com.icerti.ezcerti.domain.Claim">
+SELECT *
+FROM CHUL_TB_IMPROVE
+WHERE univ_cd=#{univ_cd}
+	AND year=#{year}
+	AND improve_no=#{claim_no}
+</select>
+
+</mapper>

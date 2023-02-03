@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.icerti.ezcerti.common.app.dao.AppMapper">
+
+<resultMap type="com.icerti.ezcerti.domain.UnivApp" id="getUniv">
+	<id property="univ_cd" column="univ_cd"/>
+	<result property="univ_name" column="univ_name"/>
+</resultMap>
+
+<resultMap type="com.icerti.ezcerti.domain.AttendmasterApp" id="getAttendmaster">
+	<id property="class_cd" column="class_cd"/>
+	<result property="subject_cd" column="subject_cd"/>
+	<result property="subject_div_cd" column="subject_div_cd"/>
+	<result property="class_name" column="class_name"/>
+	<result property="classday" column="classday"/>
+	<result property="classhour_start_time" column="classhour_start_time"/>
+	<result property="classhour_end_time" column="classhour_end_time"/>
+	<result property="prof_no" column="prof_no"/>
+	<result property="prof_name" column="prof_name"/>
+	<result property="student_no" column="student_no"/>
+	<result property="student_name" column="student_name"/>
+	<result property="coll_name" column="coll_name"/>
+	<result property="dept_name" column="dept_name"/>
+	<result property="class_cert_no" column="class_cert_no"/>
+	<result property="class_cert_time" column="class_cert_time"/>
+	<result property="classroom_no" column="classroom_no"/>
+</resultMap>
+
+<!-- Univ List -->
+<select id="getUnivList" resultMap="getUniv">
+	SELECT
+		univ_cd, univ_name
+	FROM V_CHUL_VW_univ
+	WHERE univ_sts_cd = 'G004C001'
+	GROUp BY univ_cd, univ_name
+</select>
+
+<!-- Check Student -->
+<select id="checkStudentNo" resultType="String">
+	SELECT
+		case when count(student_no) > 0 then 'SUCCESS'
+			else 'FAIL'
+		end retValue
+	FROM V_CHUL_VW_student
+	WHERE univ_cd = #{univ_cd}
+		AND student_no = #{student_no}
+</select>
+
+<!-- Current Class -->
+<select id="getCurrentClass" resultMap="getAttendmaster">
+	SELECT 
+		am.subject_cd, am.subject_div_cd, am.class_cd, am.class_name,
+		am.classday, am.classhour_start_time, am.classhour_end_time,
+		am.prof_no, am.prof_name, 
+		std.student_no, std.student_name,
+		am.prof_coll_name as coll_name, am.prof_dept_name as dept_name, 
+		am.class_cert_no, am.class_cert_time, am.cert_type, am.classroom_no
+	FROM V_CHUL_VW_attendmaster am,
+		(SELECT * FROM V_CHUL_VW_attendee
+		WHERE student_no = #{student_no}) ad,
+		 (SELECT * FROM V_CHUL_VW_student 
+         WHERE student_no = #{student_no}) std
+	WHERE 1 = 1
+		AND am.univ_cd = #{univ_cd}
+		AND am.year = #{year}
+		AND am.term_cd = #{term_cd}
+		AND to_char(am.classday, 'YYYY-MM-DD') = #{classday}
+		AND am.class_sts_cd = #{class_sts_cd}
+		AND am.univ_cd = ad.univ_cd
+		AND am.year = ad.year
+		AND am.term_cd = ad.term_cd
+		AND am.subject_cd = ad.subject_cd
+		AND am.subject_div_cd = ad.subject_div_cd
+		AND ad.student_no = std.student_no
+</select>
+
+<!-- Current Class -->
+<select id="getAttendmaster" resultType="com.icerti.ezcerti.domain.Attendmaster">
+	SELECT
+			am.subject_cd, am.subject_div_cd, am.class_cd, am.class_name,
+			am.classday, am.classhour_start_time, am.classhour_end_time,
+			am.prof_no, am.prof_name, 
+			am.prof_coll_name as coll_name, am.prof_dept_name as dept_name, 
+			am.class_cert_no, am.class_cert_time, am.cert_type, am.classroom_no
+	FROM V_CHUL_VW_ATTENDMASTER am
+	WHERE 1=1
+		AND am.univ_cd = #{univ_cd}
+		AND to_char(am.classday, 'YYYY-MM-DD') = #{classday}
+		AND am.class_cd = #{class_cd}
+		AND am.prof_no = #{prof_no}
+</select>
+
+<!-- Class Cert No -->
+<select id="getClassCertNo" resultType="String">
+	SELECT 
+		class_cert_no
+	FROM CHUL_TB_attendmaster_addinfo
+	WHERE 1 = 1
+		AND univ_cd = #{univ_cd}
+		AND to_char(classday, 'YYYY-MM-DD') = #{classday}
+		AND class_cd = #{class_cd}
+		AND prof_no = #{prof_no}
+</select>
+
+<!-- Check Student Attend -->
+<select id="checkStudentAttend" resultType="int">
+	SELECT
+	    count(student_no) as cnt
+	FROM CHUL_TB_attenddethist
+	WHERE univ_cd = #{univ_cd}
+	    AND class_cd = #{class_cd}
+	    AND to_char(classday, 'YYYY-MM-DD') = #{classday}
+	    AND student_no = #{student_no}
+</select>
+
+<!-- Select App Exec Info -->
+<select id="selectAppExec" parameterType="map" resultType="int">
+SELECT
+	count(*)
+FROM CHUL_TB_attend_appinfo
+WHERE univ_cd = #{univ_cd}
+	AND year = #{year}
+	AND term_cd = #{term_cd}
+	AND prof_no = #{prof_no}
+	AND class_cd = #{class_cd}
+	AND to_char(classday, 'YYYY-MM-DD') = #{classday}
+	AND student_no = #{student_no}	
+</select>
+
+<!-- Insert App Exec Info -->
+<insert id="insertAppExec" parameterType="map">
+INSERT INTO CHUL_TB_attend_appinfo
+	(univ_cd, year, term_cd, prof_no, class_cd, classday, student_no, app_exec, reg_date)
+VALUES
+	(#{univ_cd}, #{year}, #{term_cd}, #{prof_no}, #{class_cd}, to_date(#{classday}, 'YYYY-MM-DD'), #{student_no}, 'Y', sysdate)	
+</insert>
+
+<!-- Update App Status Info -->
+<update id="updateAppStatus" parameterType="map">
+UPDATE
+	CHUL_TB_attend_appinfo 
+SET app_error = #{app_error}
+	, mod_date = sysdate 
+WHERE univ_cd=#{univ_cd}
+	AND prof_no=#{prof_no}
+	AND class_cd=#{class_cd}
+	AND to_char(classday, 'YYYY-MM-DD')=#{classday}
+	AND student_no=#{student_no}
+</update>
+
+<!-- Select Enable Beacon Info -->
+<select id="getEnableBeaconList" parameterType="map" resultType="String">
+SELECT
+	UUID
+FROM CHUL_TB_CLASSROOM_BEACON
+WHERE CLASSROOM = 
+	(SELECT distinct CLASSROOM_NO 
+		FROM chul_tb_attendmaster_addinfo
+		WHERE class_cd = #{class_cd}
+			AND PROF_NO = #{prof_no})
+ORDER BY UUID
+</select>
+
+<!-- Insert Beacon Info -->
+<insert id="insertCertBeaconInfo" parameterType="map">
+INSERT INTO CHUL_TB_cert_beacon_info
+	(univ_cd, class_cd, classday, prof_no, student_no, ble_flag, sender_flag, receiver_flag, result, reg_date, etc)
+VALUES
+	(#{univ_cd}, #{class_cd}, to_date(#{classday}, 'YYYY-MM-DD'), #{prof_no}, #{student_no}, #{BLEFlag}, #{SenderFlag}, #{ReceiverFlag}, #{Result}, sysdate, #{etc})	
+</insert>
+
+<!-- Select Cert Beacon Info -->
+<select id="selectCertBeaconInfo" parameterType="map" resultType="int">
+SELECT
+	count(*)
+FROM CHUL_TB_CERT_BEACON_INFO
+WHERE univ_cd = #{univ_cd}
+	AND class_cd = #{class_cd}
+	AND to_char(classday, 'YYYY-MM-DD') = #{classday}
+	AND prof_no = #{prof_no}
+	AND student_no = #{student_no}
+</select>
+
+<!-- Update Cert Beacon Info -->
+<update id="updateCertBeaconInfo" parameterType="map">
+UPDATE
+	CHUL_TB_CERT_BEACON_INFO 
+SET ble_flag = #{BLEFlag}
+	, sender_flag = #{SenderFlag} 
+	, receiver_flag = #{ReceiverFlag}
+	, result = #{Result}
+	, reg_date = sysdate
+	, etc = #{etc}
+WHERE univ_cd = #{univ_cd}
+	AND class_cd = #{class_cd}
+	AND to_char(classday, 'YYYY-MM-DD') = #{classday}
+	AND prof_no = #{prof_no}
+	AND student_no = #{student_no}
+</update>
+
+<!-- Insert Cert -->
+<insert id="insertStudentCert" parameterType="map">
+MERGE INTO CHUL_TB_STUDENT_CERT_COUNT
+USING dual
+ON (STUDENT_NO = #{student_no})
+WHEN MATCHED THEN
+    UPDATE SET CERT_COUNT = CERT_COUNT + 1, CERT_DATE = sysdate
+WHEN NOT MATCHED THEN
+    INSERT (STUDENT_NO, CERT_COUNT, CERT_DATE)
+    VALUES (#{student_no}, 1, sysdate)
+</insert>
+
+<select id="checkStudentCertCount" parameterType="map" resultType="int">
+SELECT
+	distinct(CERT_COUNT)
+FROM CHUL_TB_STUDENT_CERT_COUNT
+WHERE student_no = #{student_no}
+</select>
+
+</mapper>

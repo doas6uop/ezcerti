@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.icerti.ezcerti.admin.dao.AdminMainMapper">
+	<resultMap type="com.icerti.ezcerti.domain.Board" id="getBoard">
+		<id property="board_no" column="board_no"/>
+		<result property="title" column="title"/>
+		<result property="contents" column="contents"/>
+		<result property="board_type" column="board_type"/>
+		<result property="view_cnt" column="view_cnt"/>
+		<result property="reg_user_no" column="reg_user_no"/>
+		<result property="reg_user_name" column="reg_user_name"/>
+		<result property="reg_date" column="reg_date"/>
+		<result property="cmmt_cnt" column="cmmt_cnt"/>
+	</resultMap>
+
+	<select id="getMainBoardList" parameterType="map" resultMap="getBoard">
+	<![CDATA[
+		SELECT a.* 
+			, (SELECT count(cmmt_no) FROM CHUL_TB_comment WHERE board_no = a.board_no) AS cmmt_cnt
+		FROM (
+			SELECT *
+			FROM (
+				SELECT ROWNUM row_no, a.* 
+				FROM ( 
+					SELECT
+	        		 	*
+					FROM CHUL_TB_board a
+					WHERE univ_cd = #{univ_cd}
+						AND board_type = #{board_type}
+					ORDER BY reg_date DESC) a
+				WHERE 1=1	
+        		 AND ROWNUM <= 5)
+		WHERE row_no >= 1) a
+    ]]>    
+	</select>
+
+	<select id="getMainCountList" parameterType="map" resultType="String">
+		<![CDATA[
+			SELECT 
+				CLASSOFF_CNT || ':' || CLASS_CNT || ':' || ABSENCE_CNT || ':' || ALLCLASS_CNT || ':' || TODAYCLASS_CNT || ':' || TODAYABSENCECLASS_CNT || ':' || TODAYABSENCEATTEND_CNT 
+			FROM
+				(SELECT 
+					COUNT(*) AS CLASSOFF_CNT 
+				FROM CHUL_TB_CLASSOFF_REQUEST
+				WHERE PROC_STATUS = 'REQUEST') A,
+				(SELECT
+					COUNT(*) AS CLASS_CNT
+				FROM V_CHUL_VW_ATTENDMASTER A
+				WHERE 1=1
+					AND A.UNIV_CD = #{univ_cd}
+					AND A.YEAR = #{year}
+					AND A.TERM_CD = #{term_cd}
+					AND A.CLASS_TYPE_CD != 'G019C002'
+					AND A.CLASS_STS_CD = 'G020C003'
+					AND (A.CERT_TYPE IS NULL OR A.CERT_TYPE = '')
+					AND (A.ATTEND_AUTH_CNT = 0 AND A.ATTEND_PRESENT_CNT = 0 AND A.ATTEND_LATE_CNT = 0)
+				) B,
+				(SELECT 
+					COUNT(*) AS ABSENCE_CNT
+				FROM 
+					(
+						SELECT a.STUDENT_NO,
+						    SUM(a.CNT) AS CNT
+						FROM
+						  (
+						  	SELECT * FROM 
+						  	(
+							    SELECT 
+								  AH.STUDENT_NO,
+								  COUNT(*) AS CNT,
+								  AH.SUBJECT_CD,
+								  AH.SUBJECT_DIV_CD,
+							      (
+							          SELECT
+							          	COUNT(*)
+							          FROM V_CHUL_VW_CLASS
+							          WHERE 1=1
+							          AND YEAR = #{year}
+							          AND TERM_CD = #{term_cd}
+							          AND SUBJECT_CD = AH.SUBJECT_CD
+							          AND SUBJECT_DIV_CD = AH.SUBJECT_DIV_CD
+							      ) AS SISU
+								FROM CHUL_TB_ATTENDDETHIST AH
+								WHERE AH.UNIV_CD = #{univ_cd}
+								  AND AH.YEAR        = #{year}
+								  AND AH.TERM_CD       = #{term_cd}
+								  AND AH.ATTEND_STS_CD = 'G023C004'
+								  AND AH.CLASS_TYPE_CD != 'G019C002'
+								  AND AH.PROF_NO != '999999'
+								GROUP BY AH.STUDENT_NO,
+								  AH.SUBJECT_CD,
+								  AH.SUBJECT_DIV_CD
+							) WHERE 1=1
+							    AND NVL(CNT/decode(SISU, 0, null, SISU), 0) >= 2	
+						  ) a
+						GROUP BY a.STUDENT_NO
+				       ) A, V_CHUL_VW_STUDENT STD
+				WHERE A.STUDENT_NO = STD.STUDENT_NO
+					AND STD.STUDENT_STS_CD IN ('G012C001', 'G012C006')
+				) C,
+				(SELECT
+					COUNT(*) AS ALLCLASS_CNT
+				FROM V_CHUL_VW_ATTENDMASTER A 
+				WHERE 1=1
+					AND A.UNIV_CD = #{univ_cd}
+					AND A.YEAR = #{year}
+					AND A.TERM_CD = #{term_cd}
+					AND A.CLASS_TYPE_CD != 'G019C002'
+				) D,
+				(SELECT 
+					COUNT(*) AS TODAYCLASS_CNT
+				FROM V_CHUL_VW_ATTENDMASTER A 
+				WHERE 1=1
+					AND A.UNIV_CD = #{univ_cd}
+					AND A.YEAR = #{year}
+					AND A.TERM_CD = #{term_cd}
+					AND A.CLASS_TYPE_CD != 'G019C002'
+					AND TO_CHAR(A.CLASSDAY, 'YYYY-MM-DD') = TO_CHAR(sysdate, 'YYYY-MM-DD')
+				) E,
+				(
+				SELECT
+					COUNT(*) AS TODAYABSENCECLASS_CNT
+				FROM V_CHUL_VW_ATTENDMASTER A 
+				WHERE 1=1
+					AND A.UNIV_CD = #{univ_cd}
+					AND A.YEAR = #{year}
+					AND A.TERM_CD = #{term_cd}
+					AND A.CLASS_TYPE_CD != 'G019C002'
+					AND A.CLASS_STS_CD = 'G020C003'
+					AND (A.CERT_TYPE IS NULL OR A.CERT_TYPE = '')
+					AND (A.ATTEND_AUTH_CNT = 0 AND A.ATTEND_PRESENT_CNT = 0 AND A.ATTEND_LATE_CNT = 0)
+					AND TO_CHAR(A.CLASSDAY, 'YYYY-MM-DD') = TO_CHAR(sysdate, 'YYYY-MM-DD')
+				) F,
+				(
+				SELECT 
+					COUNT(*) AS TODAYABSENCEATTEND_CNT
+				FROM 
+					(
+						SELECT a.STUDENT_NO,
+						    SUM(a.CNT) AS CNT
+						FROM
+						  (
+						  	SELECT * FROM 
+						  	(
+								SELECT 
+									AH.STUDENT_NO, 
+									COUNT(*) AS CNT,
+									AH.SUBJECT_CD,
+									AH.SUBJECT_DIV_CD,
+									(
+										SELECT
+											COUNT(*)
+										FROM V_CHUL_VW_CLASS
+										WHERE 1=1
+										AND YEAR = #{year}
+										AND SUBJECT_CD = AH.SUBJECT_CD
+										AND SUBJECT_DIV_CD = AH.SUBJECT_DIV_CD
+								    ) AS SISU
+								FROM CHUL_TB_ATTENDDETHIST AH
+						        WHERE AH.UNIV_CD = #{univ_cd}
+										AND AH.YEAR = #{year}
+										AND AH.TERM_CD = #{term_cd}
+										AND AH.ATTEND_STS_CD = 'G023C004' 
+										AND AH.CLASS_TYPE_CD != 'G019C002'
+										AND AH.PROF_NO != '999999'
+										AND TO_CHAR(AH.CLASSDAY, 'YYYY-MM-DD') = TO_CHAR(sysdate, 'YYYY-MM-DD')
+					            GROUP BY AH.STUDENT_NO,
+									  AH.SUBJECT_CD,
+									  AH.SUBJECT_DIV_CD
+							) WHERE 1=1
+							    AND NVL(CNT/decode(SISU, 0, null, SISU), 0) >= 2
+						   ) a
+						GROUP BY a.STUDENT_NO 
+				       ) A, V_CHUL_VW_STUDENT STD
+				WHERE A.STUDENT_NO = STD.STUDENT_NO
+					AND STD.STUDENT_STS_CD IN ('G012C001', 'G012C006')
+				) G
+		]]>  
+	</select>
+	
+	<select id="getMainTop3List1" parameterType="map" resultType="com.icerti.ezcerti.domain.MainStats">
+		SELECT ROWNUM, TMP.*
+		FROM (
+				SELECT 
+					A.PROF_NO, A.PROF_NAME
+					,COUNT(*) AS PROF_AB_CNT
+				FROM 
+					V_CHUL_VW_ATTENDMASTER A
+				WHERE 1=1
+				  AND A.UNIV_CD = #{univ_cd}
+				  AND A.YEAR = #{year}
+				  AND A.TERM_CD = #{term_cd}
+				  AND A.CLASS_TYPE_CD != 'G019C002'
+				  AND A.CLASS_STS_CD = 'G020C003'
+				  AND (A.CERT_TYPE IS NULL OR A.CERT_TYPE = '')
+				  AND (A.ATTEND_AUTH_CNT = 0 AND A.ATTEND_PRESENT_CNT = 0 AND A.ATTEND_LATE_CNT = 0)
+				GROUP BY A.PROF_NO, A.PROF_NAME
+				ORDER BY COUNT(*) DESC
+		      ) TMP
+		WHERE ROWNUM <![CDATA[<=]]> 3
+	</select>
+	
+	<select id="getMainTop3List2" parameterType="map" resultType="com.icerti.ezcerti.domain.MainStats">
+		SELECT ROWNUM, TMP.*
+		FROM (
+				SELECT 
+					A.CLASS_NAME
+					,COUNT(*) AS CLASS_NAME_AB_CNT
+				FROM 
+					V_CHUL_VW_ATTENDMASTER A
+				WHERE 1=1
+					AND A.UNIV_CD = #{univ_cd}
+					AND A.YEAR = #{year}
+					AND A.TERM_CD = #{term_cd}
+					AND A.CLASS_TYPE_CD != 'G019C002'
+					AND A.CLASS_STS_CD = 'G020C003'
+					AND (A.CERT_TYPE IS NULL OR A.CERT_TYPE = '')
+					AND (A.ATTEND_AUTH_CNT = 0 AND A.ATTEND_PRESENT_CNT = 0 AND A.ATTEND_LATE_CNT = 0)
+				GROUP BY A.CLASS_NAME
+				ORDER BY COUNT(*) DESC
+		      ) TMP
+		WHERE ROWNUM <![CDATA[<=]]> 3
+	</select>
+</mapper>

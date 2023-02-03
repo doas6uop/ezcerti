@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.icerti.ezcerti.student.dao.StudentAttendMapper">
+
+<!-- 2014.12.30
+	- CHUL_TB_ATTENDDETHIST를 V_CHUL_VW_ATTENDMASTER와 V_CHUL_VW_ATTENDEE의 JOIN으로 변경
+-->
+<select id="getStudentAttendDetailHistoryList" parameterType="map" resultType="com.icerti.ezcerti.domain.Attenddethist">
+SELECT
+     C1.CODE_NAME AS CLASS_TYPE_NAME,
+     C2.CODE_NAME AS CLASS_STS_NAME,
+     C3.CODE_NAME AS CERT_STS_NAME,
+	 CASE WHEN GG.STUDENT_NO IS NOT NULL THEN '공결' 
+	 	  ELSE C4.CODE_NAME
+	 END AS ATTEND_STS_NAME,
+	 CASE WHEN GG.STUDENT_NO IS NOT NULL THEN 'GONGGYUL' 
+		  ELSE A.REG_ETC
+	 END AS REG_ETC,
+     A.*
+FROM 
+	(            
+	SELECT
+	    AM.CLASS_TYPE_CD, AM.CLASS_STS_CD, NVL(AM.CERT_STS_CD, 'G021C001') AS CERT_STS_CD,
+	    AM.UNIV_CD, AM.TERM_CD, AM.SUBJECT_CD, AM.SUBJECT_DIV_CD,
+	    AM.CLASSDAY, AM.CLASSHOUR_START_TIME, AM.CLASSHOUR_END_TIME,
+	    AM.PROF_NO, AM.CLASS_CD,
+	    AD.STUDENT_NO, 
+	    STD.STUDENT_NAME, STD.COLL_NAME AS STUDENT_COLL_NAME, STD.DEPT_NAME AS STUDENT_DEPT_NAME,
+        CASE
+           WHEN STD.STUDENT_STS_CD = 'G012C002' THEN NVL (AH.ATTEND_STS_CD, 'G023C005')
+           WHEN STD.STUDENT_STS_CD = 'G012C005' THEN NVL (AH.ATTEND_STS_CD, 'G023C007')
+           ELSE NVL (AH.ATTEND_STS_CD, 'G023C001')
+        END ATTEND_STS_CD,    
+        AH.REG_ETC,
+	    NVL(AH.ATTEND_AUTH_CD, 'G022C001') AS ATTEND_AUTH_CD,
+	    NVL(AH.ATTEND_AUTH_REASON_CD, '') AS ATTEND_AUTH_REASON_CD,
+	    AH.ATTEND_PROC_TIME, AM.BEFORE_CLASSDAY
+	FROM CHUL_TB_ATTENDMASTER_ADDINFO AM,
+	    (SELECT * FROM V_CHUL_VW_ATTENDEE WHERE UNIV_CD = #{univ_cd} AND YEAR =#{year} AND TERM_CD= #{term_cd} AND STUDENT_NO = #{student_no}) AD, 
+	    (SELECT * FROM V_CHUL_VW_STUDENT WHERE STUDENT_NO = #{student_no})  STD,
+	    (SELECT * FROM CHUL_TB_ATTENDDETHIST WHERE UNIV_CD = #{univ_cd} AND YEAR =#{year} AND TERM_CD= #{term_cd} AND STUDENT_NO = #{student_no}) AH
+	WHERE 1=1
+	    AND AM.UNIV_CD = #{univ_cd}
+	    AND AM.TERM_CD = #{term_cd}
+	    AND AM.CLASS_CD = #{class_cd}
+	    AND AD.UNIV_CD = AM.UNIV_CD
+	    AND AD.TERM_CD = AM.TERM_CD
+	    AND AD.SUBJECt_CD = AM.SUBJECT_CD
+	    AND AD.SUBJECT_DIV_CD = AM.SUBJECt_DIV_CD
+	    AND AM.CLASS_CD = AH.CLASS_CD(+)
+	    AND AM.CLASSDAY = AH.CLASSDAY(+)
+	    AND AM.CLASSHOUR_START_TIME = AH.CLASSHOUR_START_TIME(+)
+		<if test='!prof_no.equals("")'>
+			AND AM.PROF_NO = #{prof_no}
+			AND AM.PROF_NO = AH.PROF_NO(+)
+		</if>
+	         
+	) A
+	LEFT OUTER JOIN (
+						SELECT
+							* 
+						FROM V_CHUL_VW_GONGGYEOL
+						WHERE 1=1
+						  AND YEAR = #{year}
+						  AND TERM_CD = #{term_cd}
+						  AND SUBJECT_CD = #{subject_cd}
+						  AND SUBJECT_DIV_cD = #{subject_div_cd}
+						  AND NVL(CANCEL_GB,'0') ='0'
+	                ) GG
+	ON A.STUDENT_NO = GG.STUDENT_NO
+	AND TO_CHAR(A.CLASSDAY, 'YYYY-MM-DD') = TO_CHAR(GG.GONGGYEOL_DT, 'YYYY-MM-DD')
+    AND A.CLASSHOUR_START_TIME = GG.CLASSHOUR_START_TIME,
+    CHUL_TB_CODEMASTER C1,
+    CHUL_TB_CODEMASTER C2,
+    CHUL_TB_CODEMASTER C3,
+    CHUL_TB_CODEMASTER C4
+WHERE 1=1
+    AND A.CLASS_TYPE_CD = C1.CODE
+    AND A.CLASS_STS_CD = C2.CODE
+    AND A.CERT_STS_CD = C3.CODE
+    AND A.ATTEND_STS_CD = C4.CODE    
+ORDER BY CLASSDAY, A.CLASSHOUR_START_TIME    
+</select>
+
+<!-- 2015.01.02
+	- BEFORE_CNT 계산 처리
+-->
+<select id="getStudentAttendCnt" parameterType="map" resultType="hashmap">
+<!-- 
+SELECT COUNT(CASE WHEN ATTEND_STS_CD='G023C001' THEN 1 END) AS BEFORE_CNT,
+       COUNT(CASE WHEN ATTEND_STS_CD='G023C002' THEN 1 END) AS PRESENT_CNT,
+       COUNT(CASE WHEN ATTEND_STS_CD='G023C003' THEN 1 END) AS LATE_CNT,
+       COUNT(CASE WHEN ATTEND_STS_CD='G023C004' THEN 1 END) AS ABSENT_CNT
+FROM CHUL_TB_ATTENDDETHIST
+WHERE UNIV_CD=#{univ_cd}
+AND TERM_CD=#{term_cd}
+AND CLASS_CD=#{class_cd}
+AND STUDENT_NO=#{student_no}
+-->
+SELECT
+	TOT_CNT - (PRESENT_CNT + LATE_CNT + ABSENT_CNT) AS BEFORE_CNT,
+	PRESENT_CNT, LATE_CNT, ABSENT_CNT
+FROM
+(
+	SELECT
+		BEFORE_CNT,
+		PRESENT_CNT, LATE_CNT, ABSENT_CNT,
+		(SELECT COUNT(*) FROM CHUL_TB_ATTENDMASTER_ADDINFO
+			WHERE UNIV_CD = #{univ_cd} 
+				AND TERM_CD = #{term_cd}
+				AND CLASS_CD = #{class_cd} 
+				AND CLASS_TYPE_CD != 'G019C002' ) AS TOT_CNT
+	FROM
+	(
+		SELECT 
+			COUNT (CASE WHEN CLASS_TYPE_CD != 'G019C002' AND ATTEND_STS_CD = 'G023C001' THEN 1 END) AS BEFORE_CNT,
+			COUNT (CASE WHEN ATTEND_STS_CD = 'G023C002' THEN 1 END) AS PRESENT_CNT,
+			COUNT (CASE WHEN ATTEND_STS_CD = 'G023C003' THEN 1 END) AS LATE_CNT,
+			COUNT (CASE WHEN ATTEND_STS_CD = 'G023C004' THEN 1 END) AS ABSENT_CNT
+		FROM CHUL_TB_ATTENDDETHIST 
+		WHERE UNIV_CD = #{univ_cd}
+			AND TERM_CD = #{term_cd}
+			AND CLASS_CD = #{class_cd}
+			AND STUDENT_NO = #{student_no}
+		<if test='!prof_no.equals("")'>
+             AND PROF_NO = #{prof_no}
+		</if>             
+	)
+)
+</select>
+
+<select id="getStudentAttendDetailHistory" resultType="com.icerti.ezcerti.domain.Attenddethist">
+SELECT c1.code_name AS attend_sts_name, a.*
+FROM
+	(SELECT *
+	FROM CHUL_TB_attenddethist
+	WHERE univ_cd=#{univ_cd}
+		AND year=#{year}
+		AND term_cd=#{term_cd}
+		AND student_no=#{student_no}
+		AND class_cd=#{class_cd}
+		AND to_char(classday, 'YYYY-MM-DD')=#{classday}
+		AND classhour_start_time=#{classhour_start_time}) a, CHUL_TB_codemaster c1
+WHERE a.attend_sts_cd=c1.code	
+</select>
+
+<!-- 2014.12.30
+	- CHUL_TB_ATTENDMASTER를 V_CHUL_VW_ATTENDMASTER로 변경
+-->
+<select id="getStudentAttendmaster" resultType="com.icerti.ezcerti.domain.Attendmaster">
+SELECT *
+FROM 
+	<!-- CHUL_TB_attendmaster -->
+	V_CHUL_VW_attendmaster
+WHERE univ_cd=#{univ_cd}
+	AND year=#{year}
+	AND term_cd=#{term_cd}
+	AND class_cd=#{class_cd}
+	AND to_char(classday, 'YYYY-MM-DD')=#{classday}
+	AND classhour_start_time=#{classhour_start_time}
+</select>
+
+<!-- 2014.12.30
+	- CHUL_TB_ATTENDMASTER를 V_CHUL_VW_ATTENDMASTER로 변경
+-->
+<select id="getAttendCert" parameterType="map" resultType="int">
+SELECT COUNT(class_cert_no)
+FROM 
+	<!-- CHUL_TB_attendmaster -->
+	V_CHUL_VW_attendmaster
+WHERE univ_cd=#{univ_cd}
+	AND year=#{year}
+	AND term_cd=#{term_cd}
+	AND class_cd=#{class_cd}
+	AND to_char(classday, 'YYYY-MM-DD')=#{classday}
+	AND classhour_start_time=#{classhour_start_time}
+	AND class_cert_no=#{class_cert_no} 
+</select>
+
+<update id="updateStudentAttendStatus" parameterType="map">
+UPDATE CHUL_TB_attenddethist
+SET attend_proc_time=SYSDATE,
+<if test='attendStatus.equals("present")'>
+    attend_sts_cd='G023C002'
+</if>
+<if test='attendStatus.equals("late")'>
+    attend_sts_cd='G023C003'
+</if>
+WHERE univ_cd=#{univ_cd}
+	AND year=#{year}
+	AND term_cd=#{term_cd}
+	AND class_cd=#{class_cd}
+	AND to_char(classday, 'YYYY-MM-DD')=#{classday}
+	AND student_no=#{student_no}
+	AND classhour_start_time=#{classhour_start_time}
+</update>
+
+<!-- 2014.12.30
+	- updateStudentAttendStatus를 insertStudentAttendStatus로 변경
+	- CHUL_TB_ATTENDDETHIST 테이블은 출결 처리시에만 데이터가 누적되므로 Update처리가 아닌 Insert 처리를 해야 함
+-->
+<insert id="insertStudentAttendStatus" parameterType="map">
+INSERT INTO CHUL_TB_ATTENDDETHIST (UNIV_CD, YEAR, TERM_CD, 
+    SUBJECT_CD, SUBJECT_DIV_CD, 
+    PROF_NO, CLASS_CD, CLASSDAY, 
+    STUDENT_NO, STUDENT_NAME, STUDENT_COLL_NAME, STUDENT_DEPT_NAME,
+    CLASSHOUR_START_TIME, CLASSHOUR_END_TIME, CLASS_TYPE_CD, 
+    ATTEND_STS_CD, ATTEND_AUTH_CD, ATTEND_PROC_TIME, REG_DATE, REG_ETC 
+    )
+SELECT
+    AM.UNIV_CD, AM.YEAR, AM.TERM_CD, 
+    AM.SUBJECT_CD, AM.SUBJECT_DIV_CD, 
+    AM.PROF_NO, AM.CLASS_CD, AM.CLASSDAY, 
+    STD.STUDENT_NO, STD.STUDENT_NAME, STD.COLL_NAME AS STUDENT_COLL_NAME, STD.DEPT_NAME AS STUDENT_DEPT_NAME,
+    AM.CLASSHOUR_START_TIME, AM.CLASSHOUR_END_TIME, AM.CLASS_TYPE_CD, 
+	#{attend_sts_cd} AS ATTEND_STS_CD,
+    'G022C001' AS ATTEND_AUTH_CD, SYSDATE AS ATTEND_PROC_TIME, SYSDATE, #{cert_sts_cd} 
+FROM V_CHUL_VW_ATTENDMASTER AM
+    , V_CHUL_VW_STUDENT STD
+WHERE AM.UNIV_CD=#{univ_cd} 
+AND am.year=#{year}
+AND AM.TERM_CD=#{term_cd} 
+AND AM.SUBJECT_CD= #{subject_cd}
+AND AM.SUBJECT_DIV_CD= #{subject_div_cd}
+AND AM.CLASSHOUR_START_TIME=#{classhour_start_time} 
+AND to_char(am.classday, 'YYYY-MM-DD')=#{classday}
+AND STD.STUDENT_NO=#{student_no} 
+</insert>
+
+<!-- 2014.12.30
+	- CHUL_TB_ATTENDMASTER를 CHUL_TB_ATTENDMASTER_ADDINFO로 변경
+-->
+<update id="updateMasterAttendStatus" parameterType="map">
+UPDATE 
+	<!-- CHUL_TB_attendmaster -->
+	CHUL_TB_attendmaster_addinfo
+SET attend_proc_cnt=attend_proc_cnt+1,
+<if test='attendStatus.equals("present")'>
+    attend_present_cnt=attend_present_cnt+1
+</if>
+<if test='attendStatus.equals("late")'>
+    attend_late_cnt=attend_late_cnt+1
+</if>
+WHERE univ_cd=#{univ_cd}
+AND year=#{year}
+AND term_cd=#{term_cd}
+AND SUBJECT_CD= #{subject_cd}
+AND SUBJECT_DIV_CD= #{subject_div_cd}
+AND to_char(classday, 'YYYY-MM-DD')=#{classday}
+AND classhour_start_time=#{classhour_start_time}
+</update>
+
+</mapper>

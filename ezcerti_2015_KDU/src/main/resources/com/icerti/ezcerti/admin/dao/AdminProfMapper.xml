@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.icerti.ezcerti.admin.dao.AdminProfMapper">
+<resultMap type="com.icerti.ezcerti.domain.Prof" id="getProf">
+<id property="univ_cd" column="univ_cd"/>
+<result property="row_no" column="row_no"/>
+<result property="term_cd" column="term_cd"/>
+<result property="prof_no" column="prof_no"/>
+<result property="coll_cd" column="coll_cd"/>
+<result property="dept_cd" column="dept_cd"/>
+<result property="coll_name" column="coll_name"/>
+<result property="dept_name" column="dept_name"/>
+<result property="prof_name" column="prof_name"/>
+<result property="prof_passwd" column="prof_passwd"/>
+<result property="hp_no" column="hp_no"/>
+<result property="email_addr" column="email_addr"/>
+<result property="photo_info" column="photo_info"/>
+<result property="prof_status" column="prof_status"/>
+<result property="prof_sts_cd" column="prof_sts_name"/>
+<result property="prof_nick_name" column="prof_nick_name"/>
+<result property="authority" column="authority"/>
+<result property="reg_type_cd" column="reg_type_cd"/>
+<result property="reg_etc" column="reg_etc"/>
+<result property="reg_date" column="reg_date"/>
+</resultMap>
+
+<select id="getProfListCount" parameterType="map" resultType="int">
+SELECT COUNT(*)
+FROM 
+	V_CHUL_VW_PROF
+WHERE UNIV_CD=#{univ_cd}
+<if test='coll_cd != null and !coll_cd.equals("")'>
+	AND COLL_CD=#{coll_cd}
+</if>
+<if test='dept_cd != null and !dept_cd.equals("")'>
+	AND DEPT_CD=#{dept_cd}
+</if>
+<if test='!searchValue.equals("")'>
+  <choose>
+   <when test='item.equals("all")'>
+    AND (prof_no LIKE #{searchValue} || '%' OR prof_name LIKE #{searchValue} || '%')
+   </when>
+   <when test='item.equals("name")'>
+    AND prof_name LIKE #{searchValue} || '%'
+   </when>
+   <when test='item.equals("code")'>
+    AND prof_no LIKE #{searchValue} || '%'
+   </when>
+   <when test='item.equals("coll_name")'>
+    AND coll_name LIKE #{searchValue} || '%'
+   </when>
+   <when test='item.equals("dept_name")'>
+    AND dept_name LIKE #{searchValue} || '%'
+   </when>
+  </choose>
+</if>
+</select>
+
+<select id="getProfList" parameterType="map" resultMap="getProf">
+<![CDATA[
+SELECT 
+	B.CODE_NAME AS PROF_STS_NAME, A.* 
+FROM
+    (
+    SELECT *
+    FROM
+        (
+        	SELECT ROWNUM row_no, A.*
+		    FROM
+		        (
+			        SELECT *
+			    	FROM
+			        (
+				        SELECT 
+				        	A.*
+				        FROM 
+				        	V_CHUL_VW_PROF A
+				        WHERE UNIV_CD=#{univ_cd}
+]]>
+						<if test='coll_cd != null and !coll_cd.equals("")'>
+							AND COLL_CD=#{coll_cd}
+						</if>
+						<if test='dept_cd != null and !dept_cd.equals("")'>
+							AND DEPT_CD=#{dept_cd}
+						</if>
+						<if test='!searchValue.equals("")'>
+						  <choose>
+							<when test='item.equals("all")'>
+							 	AND (prof_no LIKE #{searchValue} || '%' OR prof_name LIKE #{searchValue} || '%')
+							</when>  
+							<when test='item.equals("name")'>
+						        AND prof_name LIKE #{searchValue} || '%'
+							</when>
+							<when test='item.equals("code")'>
+						        AND prof_no LIKE #{searchValue} || '%'
+						    </when>
+							<when test='item.equals("coll_name")'>
+								 AND coll_name LIKE #{searchValue} || '%'
+							</when>
+							<when test='item.equals("dept_name")'>
+							 	AND dept_name LIKE #{searchValue} || '%'
+							</when>
+						  </choose>
+						</if>
+					) A			
+					WHERE 1=1		
+					<choose>
+						<when test='sortField != null and !sortField.equals("")'>
+							ORDER BY ${sortField} ${sortOrder}
+						</when>
+						<otherwise>
+							ORDER BY PROF_NAME ASC
+						</otherwise>
+					</choose>
+				) A			
+<![CDATA[        
+        WHERE ROWNUM <= #{endRow})
+    WHERE row_no>=#{startRow}) A, CHUL_TB_CODEMASTER B
+WHERE A.PROF_STS_CD=B.CODE
+]]>
+</select>	
+</mapper>

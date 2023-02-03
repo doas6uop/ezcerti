@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.icerti.ezcerti.prof.dao.ProfAttendeeMapper">
+<resultMap type="com.icerti.ezcerti.domain.Student" id="getAttendee">
+	<id property="row_no" column="row_no"/>
+	<result property="univ_cd" column="univ_cd"/>
+	<result property="term_cd" column="term_cd"/>
+	<result property="student_no" column="student_no"/>
+	<result property="coll_cd" column="coll_cd"/>
+	<result property="dept_cd" column="dept_cd"/>
+	<result property="coll_name" column="coll_name"/>
+	<result property="dept_name" column="dept_name"/>
+	<result property="student_name" column="student_name"/>
+	<result property="student_grade_cd" column="student_grade_name"/>
+	<result property="student_passwd" column="student_passwd"/>
+	<result property="hp_no" column="hp_no"/>
+	<result property="email_addr" column="email_addr"/>
+	<result property="photo_info" column="photo_info"/>
+	<result property="nation_cd" column="nation_name"/>
+	<result property="student_sts_cd" column="student_sts_name"/>
+	<result property="student_nick_name" column="student_nick_name"/>
+	<result property="authority" column="authority"/>
+	<result property="reg_type_cd" column="reg_type_cd"/>
+	<result property="reg_etc" column="reg_etc"/>
+	<result property="reg_date" column="reg_date"/>
+	<result property="status_change_date" column="status_change_date"/>
+</resultMap>
+
+<select id="getProfAttendeeListCount" parameterType="map" resultType="int">
+SELECT COUNT(*)
+FROM V_CHUL_VW_ATTENDEE A
+JOIN V_CHUL_VW_STUDENT S
+ON A.UNIV_CD=S.UNIV_CD 
+	AND A.STUDENT_NO=S.STUDENT_NO
+WHERE A.UNIV_CD=#{univ_cd}
+	AND a.year=#{year}
+	AND A.TERM_CD=#{term_cd}
+	AND A.SUBJECT_CD=#{subject_cd}
+	AND A.SUBJECT_DIV_CD=#{subject_div_cd}
+<if test='!searchValue.equals("")'>
+	<choose>
+		<when test='item.equals("name")'>
+         AND S.STUDENT_NAME LIKE '%' || #{searchValue} || '%'
+		</when>
+		<when test='item.equals("code")'>
+         AND S.STUDENT_NO LIKE '%' || #{searchValue} || '%'
+        </when>
+	</choose>
+</if>
+</select>
+
+<select id="getAttendeeList" parameterType="map" resultMap="getAttendee">
+<![CDATA[
+SELECT *
+FROM
+	(SELECT ROWNUM AS row_no, s.* 
+	FROM
+		(SELECT b.code_name AS student_grade_name, c.code_name AS nation_name, d.code_name AS student_sts_name, s.*
+		FROM
+			(SELECT s.*
+			FROM V_CHUL_VW_attendee a
+			JOIN V_CHUL_VW_student s
+			ON a.univ_cd=s.univ_cd 
+				and a.student_no=s.student_no
+			WHERE a.univ_cd=#{univ_cd}
+				AND a.year=#{year}
+				AND a.term_cd=#{term_cd}
+				AND a.subject_cd=#{subject_cd}
+				AND a.subject_div_cd=#{subject_div_cd}
+	]]>
+	<if test='!searchValue.equals("")'>
+		<choose>
+			<when test='item.equals("name")'>
+	         AND s.student_name LIKE '%' || #{searchValue} || '%'
+			</when>
+			<when test='item.equals("code")'>
+	         AND s.student_no LIKE '%' || #{searchValue} || '%'
+	        </when>
+		</choose>
+	</if>
+	<![CDATA[            
+			) s, CHUL_TB_codemaster b, CHUL_TB_codemaster c, CHUL_TB_codemaster d
+		WHERE s.student_grade_cd=b.code
+			AND s.nation_cd=c.code
+			AND s.student_sts_cd=d.code
+		ORDER BY s.dept_name, s.student_grade, s.student_no
+		) s
+	WHERE ROWNUM <= #{endRow})
+WHERE row_no >= #{startRow}
+]]>
+</select>
+
+<select id="getAttendDetailList" parameterType="map" resultType="com.icerti.ezcerti.domain.Attenddethist">
+SELECT
+    ROWNUM AS row_no, C.CODE_NAME AS ATTEND_STS_NAME,
+	(SELECT (TO_CHAR(DECODE(A.CLASS_TYPE_CD, 'G019C003', BEFORE_CLASSDAY, CLASSDAY),'IW') - TO_CHAR(TERM_START_DATE,'IW') + 1) FROM CHUL_TB_UNIV WHERE UNIV_STS_CD = 'G004C001') CURR_WEEK,
+    A.*
+FROM
+(
+    SELECT
+        A.CLASSDAY,
+        NVL (AH.ATTEND_STS_CD, 'G023C001') AS ATTEND_STS_CD,
+        A.BEFORE_CLASSDAY, A.CLASS_TYPE_CD
+    FROM
+    (
+    	SELECT
+            AM.UNIV_CD, AM.YEAR, AM.TERM_CD,
+            AM.SUBJECT_CD, AM.SUBJECT_DIV_CD,
+            AM.CLASS_CD, AM.CLASSDAY, AM.PROF_NO, 
+			AM.BEFORE_CLASSDAY, AM.CLASS_TYPE_CD,AD.STUDENT_NO,
+			AM.CLASSHOUR_START_TIME
+		FROM
+			(    	
+	        SELECT 
+	            AM.UNIV_CD, AM.YEAR, AM.TERM_CD,
+	            AM.SUBJECT_CD, AM.SUBJECT_DIV_CD,
+	            AM.CLASS_CD, AM.CLASSDAY, AM.PROF_NO, 
+	            AM.UNIV_CD ||'|' || AM.YEAR || '|' || AM.TERM_CD || '|' || AM.SUBJECT_CD || '|' || AM.SUBJECT_DIV_CD || '|' || TO_CHAR(AM.CLASSDAY, 'D') || '|' || AM.PROF_NO || '|' || TO_CHAR(AM.BEFORE_CLASSDAY, 'HH24:MI') BEFORE_CLASS_CD,
+	            AM.BEFORE_CLASSDAY, AM.CLASS_TYPE_CD,
+	            AM.CLASSHOUR_START_TIME
+	        FROM    
+	            V_CHUL_VW_ATTENDMASTER AM
+	        WHERE 1=1
+	             AND AM.UNIV_CD = #{univ_cd}
+	             AND AM.PROF_NO = #{prof_no}          
+	             AND AM.CLASS_CD = #{class_cd}
+			) AM
+			INNER JOIN V_CHUL_VW_ATTENDEE AD ON
+			    AM.UNIV_CD        	  = AD.UNIV_CD
+			    AND AM.YEAR           = AD.YEAR
+			    AND AM.TERM_CD        = AD.TERM_CD
+			    AND AM.SUBJECT_CD     = AD.SUBJECT_CD
+			    AND AM.SUBJECT_DIV_CD = AD.SUBJECT_DIV_CD			
+	            AND AD.STUDENT_NO 	  = #{student_no}
+     ) A,
+        CHUL_TB_ATTENDDETHIST AH
+    WHERE 1=1     
+        AND A.UNIV_CD = AH.UNIV_CD(+)
+        AND A.YEAR = AH.YEAR(+)
+        AND A.TERM_CD = AH.TERM_CD(+)
+        AND A.SUBJECT_CD = AH.SUBJECT_CD(+)
+        AND A.SUBJECT_DIV_CD = AH.SUBJECT_DIV_CD(+)
+        AND A.CLASS_CD = AH.CLASS_CD(+)
+        AND A.CLASSDAY = AH.CLASSDAY(+)
+        AND A.CLASSHOUR_START_TIME = AH.CLASSHOUR_START_TIME(+)
+        AND A.PROF_NO = AH.PROF_NO(+)
+        AND A.STUDENT_NO = AH.STUDENT_NO(+)
+) A,
+    CHUL_TB_CODEMASTER C
+WHERE 1=1    
+    AND A.ATTEND_STS_CD = C.CODE
+ORDER BY  A.CLASSDAY
+</select>
+
+<select id="getLectureDetail" parameterType="map" resultType="com.icerti.ezcerti.domain.Lecture">
+SELECT *
+FROM 
+	V_CHUL_VW_CLASS
+WHERE UNIV_CD=#{univ_cd}
+AND year=#{year}
+AND PROF_NO=#{prof_no}
+AND CLASS_CD=#{class_cd}
+</select>
+
+</mapper>

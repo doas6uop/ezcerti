@@ -1,0 +1,32 @@
+@charset "euc-kr";
+
+/*로그인메인*/
+.main_info{width:690px; height:61px; background:url(../images/admin/info_bg.gif) no-repeat;}
+.main_info ul li{float:left; width:170px; padding:20px 30px; font-weight:bold;}
+.main_info ul li p.info_title{float:left ;width:95px}
+.main_info ul li p.info_num{float:left; width:75px; height:17px; padding-top:3px; background:url(../images/admin/info_num.gif) no-repeat; color:#FFF; text-align:center; font-family:Dotum}
+
+
+/*로그인메인 qna 리스트*/
+table.tstyle_logm{clear:both; width:690px; border:solid #bcbdbd 1px; font-size:12px; font-family:Dotum; color:#333 }
+table.tstyle_logm th{padding:10px 0 5px 0; border-bottom:solid #bcbdbd 1px; border-right:solid #e4e5e5 1px; background:url(../images/admin/qna_table_bg.gif) repeat-x; height:20px;}
+table.tstyle_logm td{border-bottom:solid #e4e5e5 1px; border-right:solid #e4e5e5 1px; text-align:center; padding:12px 0}
+table.tstyle_logm td.title_left{border-bottom:solid #e4e5e5 1px; border-right:solid #e4e5e5 1px; text-align:left; padding:12px}
+
+table.tstyle_logm2 {clear:both; width:690px; border:solid #bcbdbd 1px; font-size:12px; font-family:Dotum; color:#333 }
+table.tstyle_logm2 th{padding:6px 0 5px 0; border-bottom:solid #bcbdbd 1px; border-right:solid #e4e5e5 1px; background:url(../images/admin/qna_table_bg.gif) repeat-x; height:20px;}
+table.tstyle_logm2 td{border-bottom:solid #e4e5e5 1px; border-right:solid #e4e5e5 1px; text-align:center; padding:12px 0}
+table.tstyle_logm2 td.title_left{border-bottom:solid #e4e5e5 1px; border-right:solid #e4e5e5 1px; text-align:left; padding:12px}
+
+/*통합검색 검색영역*/
+#searchBox{float:left; width:630px; height:66px; padding:25px 30px 20px 30px; background:url(../images/admin/search_bg.gif) no-repeat;}
+#searchBox .targetSelect{float:left; width:620px; height:30px; font-weight:bold; margin-bottom:5px}
+#searchBox .searchSelect select{float:left; width:100px; height:30px; border:#c0c0c0 solid 1px;}
+#searchBox .searchKeyword input.search_input{float:left; width:435px; height:26px; border:#c0c0c0 solid 1px; margin-left:15px;}
+#searchBox .searchBtn{float:left}
+
+/*통합검색 검색결과*/
+table.tstyle_valSearch{clear:both; width:690px; font-family:Dotum; color:#6b6b6b; font-size:12px;}
+table.tstyle_valSearch th{padding:10px 0 5px 0; border-bottom:solid #bcbdbd 1px; border-top:solid #585858 2px; background:url(../images/admin/table_line.gif) center right no-repeat ; height:20px;}
+table.tstyle_valSearch th.th_end{background:none;}
+table.tstyle_valSearch td{border-bottom:solid #e4e5e5 1px; text-align:center; padding:12px 0}
