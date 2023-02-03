@@ -34,7 +34,66 @@
 	<filter-name>xss</filter-name>
 	<url-pattern>/*</url-pattern>
   </filter-mapping>
-  
+
+
+
+    <filter>
+        <filter-name>CSPFilter</filter-name>
+        <filter-class>com.icerti.ezcerti.filter.CSPFilter</filter-class>
+        <init-param>
+            <param-name>report-only</param-name>
+            <param-value>false</param-value>
+        </init-param>
+        <init-param>
+            <param-name>report-uri</param-name>
+            <param-value>/ContentSecurityPolicyReporter</param-value>
+        </init-param>
+        <init-param>
+            <param-name>sandbox</param-name>
+            <param-value>true</param-value>
+        </init-param>
+        <init-param>
+            <param-name>default-src</param-name>
+            <param-value>'self'</param-value>
+        </init-param>
+        <init-param>
+            <param-name>img-src</param-name>
+            <param-value>https://attend.kduniv.ac.kr/*</param-value>
+        </init-param>
+        <init-param>
+            <param-name>script-src</param-name>
+            <param-value>'self' https://attend.kduniv.ac.kr/*</param-value>
+        </init-param>
+        <init-param>
+            <param-name>style-src</param-name>
+            <param-value>'self'</param-value>
+        </init-param>
+        <init-param>
+            <param-name>connect-src</param-name>
+            <param-value>'self'</param-value>
+        </init-param>
+        <init-param>
+            <param-name>font-src</param-name>
+            <param-value>'self'</param-value>
+        </init-param>
+        <init-param>
+            <param-name>object-src</param-name>
+            <param-value>'self'</param-value>
+        </init-param>
+        <init-param>
+            <param-name>media-src</param-name>
+            <param-value>'self'</param-value>
+        </init-param>
+        <init-param>
+            <param-name>frame-src</param-name>
+            <param-value>'self'</param-value>
+        </init-param>
+    </filter>
+    <filter-mapping>
+        <filter-name>CSPFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
     <listener>
 	<listener-class>org.springframework.web.util.Log4jConfigListener</listener-class>
   </listener>

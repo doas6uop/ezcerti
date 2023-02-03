@@ -10,6 +10,8 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.lang3.StringUtils;
+
 public class CSPFilter implements Filter {
 
     public static final String CONTENT_SECURITY_POLICY_HEADER = "Content-Security-Policy";
@@ -104,15 +106,19 @@ public class CSPFilter implements Filter {
     }
 
     private void addDirectiveToContentSecurityPolicy(StringBuilder contentSecurityPolicy, String directiveName, String value) {
-    	
+        if (StringUtils.isNotBlank(value) && !defaultSrc.equals(value)) {
+            contentSecurityPolicy.append("; ").append(directiveName).append(" ").append(value);
+        }
     }
 
     private void addSandoxDirectiveToContentSecurityPolicy(StringBuilder contentSecurityPolicy, String value) {
+        if (StringUtils.isNotBlank(value)) {
             if ("true".equalsIgnoreCase(value)) {
                 contentSecurityPolicy.append("; ").append(SANDBOX);
             } else {
                 contentSecurityPolicy.append("; ").append(SANDBOX).append(" ").append(value);
             }
+        }
     }
 
     public void destroy() {
